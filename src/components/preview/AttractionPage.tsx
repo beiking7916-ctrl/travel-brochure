@@ -1,0 +1,144 @@
+import React, { useMemo } from 'react';
+import { useBrochure } from '../../context/BrochureContext';
+import { Camera } from 'lucide-react';
+import { PageWrapper } from './PageWrapper';
+import { Attraction } from '../../types';
+
+export function AttractionPage() {
+    const { data } = useBrochure();
+    const attractions = data.attractions || [];
+    if (attractions.length === 0) return null;
+
+    const renderLayout = (attraction: Attraction, isCompact: boolean = false) => {
+        const { images, layout } = attraction;
+        const imgCount = images.length;
+
+        if (imgCount === 0) return null;
+
+        // 在一頁兩個景點的模式下，限制高度
+        const maxHeightClass = isCompact ? "max-h-[160px]" : "max-h-[320px]";
+
+        if (layout === 'top-1-bottom-2' || (imgCount === 3 && layout !== 'left-1-right-2')) {
+            return (
+                <div className={`flex flex-col gap-2 min-h-[120px] ${maxHeightClass} flex-grow mt-3`}>
+                    <div className="h-2/3 rounded-xl overflow-hidden relative">
+                        <img src={images[0]} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <div className="h-1/3 flex gap-2">
+                        {images[1] && <div className="flex-1 rounded-xl overflow-hidden relative"><img src={images[1]} className="w-full h-full object-cover" alt="" /></div>}
+                        {images[2] && <div className="flex-1 rounded-xl overflow-hidden relative"><img src={images[2]} className="w-full h-full object-cover" alt="" /></div>}
+                    </div>
+                </div>
+            );
+        }
+
+        if (layout === 'left-1-right-2' || imgCount === 3) {
+            return (
+                <div className={`flex gap-2 min-h-[120px] ${maxHeightClass} flex-grow mt-3`}>
+                    <div className="w-2/3 rounded-xl overflow-hidden relative">
+                        <img src={images[0]} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <div className="w-1/3 flex flex-col gap-2">
+                        {images[1] && <div className="flex-1 rounded-xl overflow-hidden relative"><img src={images[1]} className="w-full h-full object-cover" alt="" /></div>}
+                        {images[2] && <div className="flex-1 rounded-xl overflow-hidden relative"><img src={images[2]} className="w-full h-full object-cover" alt="" /></div>}
+                    </div>
+                </div>
+            );
+        }
+
+        if (layout === 'grid-4' || imgCount >= 4) {
+            return (
+                <div className={`grid grid-cols-2 gap-2 min-h-[120px] ${maxHeightClass} flex-grow mt-3`}>
+                    {images.slice(0, 4).map((img, idx) => (
+                        <div key={idx} className="rounded-xl overflow-hidden relative">
+                            <img src={img} className="w-full h-full object-cover" alt="" />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <div className={`min-h-[120px] ${maxHeightClass} flex-grow mt-3 rounded-xl overflow-hidden relative`}>
+                <img src={images[0]} className="w-full h-full object-cover" alt="" />
+            </div>
+        );
+    };
+
+    // 將景點分支出多個頁面
+    const attractionPages = useMemo(() => {
+        const pages: Attraction[][] = [];
+        let currentPage: Attraction[] = [];
+
+        attractions.forEach((attraction, index) => {
+            // 如果當前頁面已經有一個景點，且當前景點是一頁兩個模式、
+            // 且前一個景點也是一頁兩個模式、且前一個沒要求分頁
+            const canFitInCurrent =
+                currentPage.length === 1 &&
+                currentPage[0].isTwoPerPage &&
+                attraction.isTwoPerPage &&
+                !currentPage[0].pageBreakAfter;
+
+            if (canFitInCurrent) {
+                currentPage.push(attraction);
+                pages.push(currentPage);
+                currentPage = [];
+            } else {
+                // 如果當前頁面本來就有東西（但沒辦法放進去），先推掉
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                }
+
+                currentPage = [attraction];
+
+                // 如果本景點不支援一頁兩個，或是有強制分頁，推掉
+                if (!attraction.isTwoPerPage || attraction.pageBreakAfter) {
+                    pages.push(currentPage);
+                    currentPage = [];
+                }
+            }
+        });
+
+        if (currentPage.length > 0) {
+            pages.push(currentPage);
+        }
+
+        return pages;
+    }, [attractions]);
+
+    return (
+        <>
+            {attractionPages.map((pageAttractions, pageIdx) => (
+                <PageWrapper
+                    key={pageIdx}
+                    title={pageIdx === 0 ? "景點介紹" : ""}
+                    icon={pageIdx === 0 ? <Camera size={24} /> : undefined}
+                >
+                    <div className="flex flex-col h-full py-2 gap-6">
+                        {pageAttractions.map((attraction, aIdx) => (
+                            <div key={aIdx} className={`flex flex-col flex-1 ${pageAttractions.length > 1 ? 'min-h-0' : 'h-full'}`}>
+                                <div className="flex items-center mb-4">
+                                    <div
+                                        className="w-1.5 h-6 mr-3 rounded-full"
+                                        style={{ backgroundColor: data.theme.primary }}
+                                    />
+                                    <h2 className={`${pageAttractions.length > 1 ? 'text-xl' : 'text-2xl'} font-bold text-gray-800 tracking-wide flex-1 flex items-center gap-2`}>
+                                        {attraction.title}
+                                        {attraction.country && <span className="text-[10px] font-bold text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded uppercase">{attraction.country}</span>}
+                                    </h2>
+                                </div>
+
+                                <div className="bg-gray-50/50 p-4 rounded-2xl flex-1 flex flex-col min-h-0">
+                                    <div className={`prose prose-sm max-w-none text-gray-600 leading-relaxed font-medium ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-4 flex-grow'}`}>
+                                        {attraction.description}
+                                    </div>
+                                    {renderLayout(attraction, pageAttractions.length > 1)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </PageWrapper>
+            ))}
+        </>
+    );
+}

@@ -1,29 +1,57 @@
 export interface FlightInfo {
   airline: string;
+  airlineLogo?: string;
   flightNumber: string;
+  date?: string; // 新增日期欄位
   departureTime: string;
   departurePlace: string;
   arrivalTime: string;
   arrivalPlace: string;
+  arrivalNextDay?: boolean; // 新增：到達時間是否為隔日
+  duration?: string;
+  flightDuration?: string; // 新增：飛行總時數 (e.g. 12h 30m)
+  type: 'outbound' | 'middle' | 'return'; // 新增：航段類型
 }
 
 export interface Hotel {
   name: string;
+  description?: string;
   phone: string;
   address: string;
   morningCall: string;
+  image?: string; // 加入飯店圖片支援
+  pageBreakBefore?: boolean; // 手動換頁標示
 }
 
 export interface ItineraryDay {
   title: string;
   description: string;
+  attractions?: string; // 景點介紹
   meals: {
     breakfast: boolean;
+    breakfastText?: string;
     lunch: boolean;
+    lunchText?: string;
     dinner: boolean;
+    dinnerText?: string;
   };
   hotelIndex: number | null;
   images: string[];
+  pageBreakBefore?: boolean; // 手動換頁標示
+}
+
+export interface TipItem {
+  id: string; // 用來綁定預設圖示 (如: clothes, items, weather, time, power, money, custom, comms, bag)
+  title: string;
+  content: string;
+  image?: string; // 使用者自訂上傳的圖示或圖片
+}
+
+export type GridTips = TipItem[];
+
+export interface DestinationSection {
+  title: string;
+  content: string;
 }
 
 export interface Tips {
@@ -31,7 +59,34 @@ export interface Tips {
   security: string;
   immigration: string;
   luggage: string;
-  destination: string;
+  destination: string; // 回溯相容
+  destinationSections?: DestinationSection[]; // 新增：分層注意事項
+}
+
+export interface Attraction {
+  title: string;
+  description: string;
+  images: string[];
+  layout: 'top-1-bottom-2' | 'left-1-right-2' | 'grid-4' | 'single';
+  country?: string; // 修正：景點國家資料
+  pageBreakAfter?: boolean; // 景點手動分頁
+  isTwoPerPage?: boolean; // 新增：是否一頁兩個景點
+}
+
+export interface HotelDetail {
+  id: string;
+  name: string;
+  intro: string; // 飯店介紹
+  roomType: string;
+  facilities: string[];
+  images: string[];
+  bottomLayout?: 'left-info-right-images' | 'left-images-right-info' | 'full-info'; // 新增底部版面配置
+}
+
+export interface MapImage {
+  src: string;
+  caption?: string;
+  fit?: 'cover' | 'contain';   // 滿版裁切 或 保持比例
 }
 
 export interface ThemeColors {
@@ -40,9 +95,33 @@ export interface ThemeColors {
   text: string;
 }
 
+export type SectionId =
+  | 'flight'
+  | 'attraction'
+  | 'hotel'
+  | 'hotelDetail'
+  | 'map'
+  | 'itinerary'
+  | 'packing'
+  | 'tips'
+  | 'gridTips';
+
+export const defaultSectionOrder: SectionId[] = [
+  'flight',
+  'attraction',
+  'hotel',
+  'hotelDetail',
+  'map',
+  'itinerary',
+  'packing',
+  'tips',
+  'gridTips'
+];
+
 export interface BrochureData {
   agency: string;
   logo: string;
+  coverImage?: string; // 新增封面滿版圖支援
   title: string;
   startDate: string;
   duration: number;
@@ -50,43 +129,53 @@ export interface BrochureData {
   tourLeaderPhone: string;
   meetingPoint: string;
   meetingTime: string;
-  flights: {
-    outbound: FlightInfo;
-    return: FlightInfo;
-  };
+  meetingMap?: string; // 機場集合地點地圖圖片
+  emergencyContact?: string; // 緊急聯絡人
+  emergencyPhone?: string; // 緊急聯絡電話
+  agencyName?: string; // 新增：旅行社名稱
+  agencyPhone?: string; // 新增：旅行社市話
+  agencyMobile?: string; // 新增：旅行社手機
+  emergencyContactName?: string; // 新增：聯絡人姓名
+  flights: FlightInfo[]; // 修改為數組以支援多段航班 (中轉)
   hotels: Hotel[];
+  hotelDetails: HotelDetail[]; // 飯店詳細介紹頁面
   itineraries: ItineraryDay[];
-  packingList: string[];
+  attractions: Attraction[];   // 景點介紹頁面
+  mapPage?: MapImage;          // 整頁地圖
+  packingList: PackingItem[];
   tips: Tips;
+  gridTips: GridTips;
   theme: ThemeColors;
+  sectionOrder: SectionId[];   // 新增：版塊排序
+  tocSettings?: Record<string, boolean>; // 新增：目錄顯示設定
 }
 
 export const defaultTheme: ThemeColors = {
-  primary: '#1e3a5f',
-  secondary: '#f8fafc',
-  text: '#1e293b',
+  primary: '#2C3E50', // 商務深藍
+  secondary: '#F8F9FA', // 極簡灰白
+  text: '#34495E', // 內文深灰
 };
 
 export const themes = {
   business: {
-    primary: '#1e3a5f',
-    secondary: '#f8fafc',
-    text: '#1e293b',
+    primary: '#2C3E50',
+    secondary: '#F8F9FA',
+    text: '#34495E',
   },
   nature: {
-    primary: '#2d6a4f',
-    secondary: '#f0fdf4',
-    text: '#1c1917',
+    primary: '#435E55', // 質感森綠
+    secondary: '#F4F7F6', // 淺灰綠
+    text: '#2C3E38',
   },
   romance: {
-    primary: '#be185d',
-    secondary: '#fdf2f8',
-    text: '#831843',
+    primary: '#8A5A6D', // 煙燻玫瑰
+    secondary: '#FAF5F7', // 暖白粉
+    text: '#4A333C',
   },
   energy: {
-    primary: '#ea580c',
-    secondary: '#fff7ed',
-    text: '#7c2d12',
+    primary: '#B66046', // 質感陶土橘
+    secondary: '#FCF8F5',
+    text: '#5D3528',
   },
 };
 
@@ -98,15 +187,68 @@ export const defaultTips: Tips = {
   destination: '步出入境大廳後，留意小偷非常多，隨時要留心隨身手提物品與行李。',
 };
 
-export const defaultPackingList = [
-  '護照',
-  '機票/電子機票',
-  '手機 + 充電線',
-  '個人藥物',
-  '換洗衣物',
-  '防晒乳',
-  '雨具',
-  '行動電源',
+export const defaultGridTips: GridTips = [
+  {
+    id: 'clothes',
+    title: '衣著',
+    content: '便服以夏季服裝為主，建議選擇方便隨時穿脫、輕便的服裝，鞋子則以休閒鞋為主。',
+  },
+  {
+    id: 'items',
+    title: '攜帶物品',
+    content: '雨具、牙膏、牙刷、拖鞋、刮刀、帽子、護膚油或乳液、太陽眼鏡、個人常用藥品等...',
+  },
+  {
+    id: 'weather',
+    title: '氣溫',
+    content: '當地氣候溫差大，請備妥薄外套。\n白天均溫約 30°C\n夜晚均溫約 22°C',
+  },
+  {
+    id: 'time',
+    title: '時差',
+    content: '目的地比台灣慢4小時',
+  },
+  {
+    id: 'power',
+    title: '電壓',
+    content: '當地電壓為220V，頻率為60HZ，插頭是三孔方型，建議預先準備萬國轉換插頭。',
+  },
+  {
+    id: 'money',
+    title: '錢幣',
+    content: '1台幣 ≈ 約0.12當地貨幣\n1當地貨幣 ≈ 8.36台幣\n※以當日牌告匯率為主',
+  },
+  {
+    id: 'customs',
+    title: '海關',
+    content: '台灣出境，攜帶外幣不可超過美金壹萬元現金(旅行支票不限)，新台幣不可超過拾萬元。',
+  },
+  {
+    id: 'comms',
+    title: '通訊',
+    content: '直撥回台灣時可打:\n國際冠碼 (00) + 台灣國碼 (886) + 區域號碼 + 家中電話號碼。',
+  },
+  {
+    id: 'bag',
+    title: '行李',
+    content: '托運行李方面，經濟艙一件25公斤。而手提行李則是一件7公斤，敬請上鎖。\n※不能隨身攜帶水果刀、小剪刀、火柴等。',
+  },
+];
+
+export interface PackingItem {
+  text: string;
+  important: boolean;
+}
+
+export const defaultPackingList: PackingItem[] = [
+  { text: '護照', important: true },
+  { text: '機票/電子機票', important: true },
+  { text: '手機 + 充電線', important: true },
+  { text: '個人藥物', important: false },
+  { text: '換洗衣物', important: false },
+  { text: '防晒乳', important: false },
+  { text: '雨具', important: false },
+  { text: '行動電源', important: true },
 ];
 
 export function createDefaultData(): BrochureData {
@@ -120,29 +262,49 @@ export function createDefaultData(): BrochureData {
     tourLeaderPhone: '',
     meetingPoint: '',
     meetingTime: '',
-    flights: {
-      outbound: {
+    meetingMap: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    flights: [
+      {
         airline: '',
+        airlineLogo: '',
         flightNumber: '',
+        date: '',
         departureTime: '',
         departurePlace: '',
         arrivalTime: '',
         arrivalPlace: '',
+        arrivalNextDay: false,
+        duration: '',
+        flightDuration: '',
+        type: 'outbound',
       },
-      return: {
+      {
         airline: '',
+        airlineLogo: '',
         flightNumber: '',
+        date: '',
         departureTime: '',
         departurePlace: '',
         arrivalTime: '',
         arrivalPlace: '',
-      },
-    },
+        arrivalNextDay: false,
+        duration: '',
+        flightDuration: '',
+        type: 'return',
+      }
+    ],
     hotels: [],
+    hotelDetails: [],
     itineraries: [],
+    attractions: [],
     packingList: [...defaultPackingList],
     tips: { ...defaultTips },
+    gridTips: [...defaultGridTips],
     theme: { ...defaultTheme },
+    sectionOrder: [...defaultSectionOrder],
+    tocSettings: defaultSectionOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {}),
   };
 }
 
@@ -150,10 +312,14 @@ export function initializeItineraries(duration: number): ItineraryDay[] {
   return Array.from({ length: duration }, (_, i) => ({
     title: `第 ${i + 1} 天`,
     description: '',
+    attractions: '',
     meals: {
       breakfast: false,
+      breakfastText: '',
       lunch: false,
+      lunchText: '',
       dinner: false,
+      dinnerText: '',
     },
     hotelIndex: null,
     images: [],
@@ -164,6 +330,7 @@ export function initializeHotels(duration: number): Hotel[] {
   // Day 1 is departure, no hotel needed
   return Array.from({ length: Math.max(0, duration - 1) }, () => ({
     name: '',
+    description: '',
     phone: '',
     address: '',
     morningCall: '',

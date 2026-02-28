@@ -1,51 +1,141 @@
-import React from 'react';
-import { BrochureProvider } from './context/BrochureContext';
+import React, { useEffect, useState } from 'react';
+import { BrochureProvider, useBrochure } from './context/BrochureContext';
 import { EditorPanel } from './components/editor/EditorPanel';
 import { PreviewPanel } from './components/preview/PreviewPanel';
-import { Printer } from 'lucide-react';
+import { Header } from './components/Header';
+import { Dashboard } from './components/Dashboard';
+import { supabase } from './lib/supabase';
+import { storage } from './lib/storage';
+import type { BrochureData } from './types';
 
-function App() {
-  const handlePrint = () => {
-    window.print();
-  };
+function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackToDashboard: () => void }) {
+  const { data } = useBrochure();
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
+
+  // 20秒防抖自動儲存
+  useEffect(() => {
+    setSaveStatus('unsaved');
+    const timer = setTimeout(() => {
+      setSaveStatus('saving');
+      storage.saveBrochure(currentId, data);
+      setLastSaved(new Date());
+      setSaveStatus('saved');
+    }, 20000);
+
+    return () => clearTimeout(timer);
+  }, [data, currentId]);
 
   return (
-    <BrochureProvider>
-      <div className="h-screen flex flex-col">
-        {/* Header */}
-        <header 
-          className="h-16 flex items-center justify-between px-6 border-b no-print"
-          style={{ backgroundColor: 'white', borderColor: '#e5e7eb' }}
-        >
-          <h1 
-            className="text-xl font-bold"
-            style={{ color: '#1e3a5f' }}
-          >
-            📖 旅遊手冊產生器
-          </h1>
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white"
-            style={{ backgroundColor: '#1e3a5f' }}
-          >
-            <Printer size={18} />
-            列印 PDF
-          </button>
-        </header>
+    <div className="h-screen flex flex-col">
+      <Header
+        onBackToDashboard={onBackToDashboard}
+        saveStatus={saveStatus}
+      />
 
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Editor Panel - 40% */}
-          <div className="w-2/5 no-print border-r">
-            <EditorPanel />
-          </div>
-
-          {/* Preview Panel - 60% */}
-          <div className="w-3/5">
-            <PreviewPanel />
-          </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-2/5 no-print border-r">
+          <EditorPanel />
+        </div>
+        <div className="w-3/5">
+          <PreviewPanel />
         </div>
       </div>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialData, setInitialData] = useState<BrochureData | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = urlParams.get('id');
+
+      if (urlId) {
+        // 先嘗試從本機讀取
+        const localData = storage.getBrochure(urlId);
+        if (localData) {
+          setInitialData(localData);
+          setCurrentId(urlId);
+          setView('editor');
+          setLoading(false);
+          return;
+        }
+
+        // 本機沒有，再去 Supabase 抓取（加 8 秒 timeout 防止無限等待）
+        if (supabase) {
+          try {
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('TIMEOUT')), 8000)
+            );
+
+            const fetchPromise = supabase
+              .from('brochures')
+              .select('data')
+              .eq('id', urlId)
+              .single();
+
+            const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (error) throw error;
+            if (data && data.data) {
+              const cloudData = data.data as BrochureData;
+              storage.saveBrochure(urlId, cloudData);
+              setInitialData(cloudData);
+              setCurrentId(urlId);
+              setView('editor');
+            }
+          } catch (err: any) {
+            if (err?.name === 'AbortError' || err?.message === 'TIMEOUT') {
+              console.warn('雲端載入超時，改由主頁面開啟');
+            } else {
+              console.warn('雲端載入失敗:', err?.message);
+            }
+          }
+        }
+      }
+      setLoading(false);
+    }
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500">
+        <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="font-medium tracking-wider">載入手冊資料中...</p>
+      </div>
+    );
+  }
+
+  if (view === 'dashboard') {
+    return <Dashboard onSelectBrochure={(id) => {
+      const data = storage.getBrochure(id);
+      setInitialData(data);
+      setCurrentId(id);
+      setView('editor');
+      // 清除網址的 ?id 除非想要保持雲端連結（點擊雲端儲存時才會再次設定）
+      window.history.pushState({}, '', window.location.pathname);
+    }} />
+  }
+
+  return (
+    <BrochureProvider initialData={initialData} key={currentId}>
+      <InnerApp
+        currentId={currentId!}
+        onBackToDashboard={() => {
+          setView('dashboard');
+          setCurrentId(null);
+          setInitialData(null);
+          window.history.pushState({}, '', window.location.pathname);
+        }}
+      />
     </BrochureProvider>
   );
 }

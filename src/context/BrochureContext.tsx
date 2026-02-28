@@ -14,14 +14,15 @@ interface BrochureContextType {
   data: BrochureData;
   updateData: (updates: Partial<BrochureData>) => void;
   setTheme: (theme: ThemeColors | keyof typeof themes) => void;
-  addPackingItem: (item: string) => void;
+  addPackingItem: (text: string, important: boolean) => void;
   removePackingItem: (index: number) => void;
 }
 
 const BrochureContext = createContext<BrochureContextType | undefined>(undefined);
 
-export function BrochureProvider({ children }: { children: ReactNode }) {
+export function BrochureProvider({ children, initialData }: { children: ReactNode, initialData?: BrochureData | null }) {
   const [data, setData] = useState<BrochureData>(() => {
+    if (initialData) return initialData;
     const initial = createDefaultData();
     initial.itineraries = initializeItineraries(initial.duration);
     initial.hotels = initializeHotels(initial.duration);
@@ -31,13 +32,7 @@ export function BrochureProvider({ children }: { children: ReactNode }) {
   const updateData = (updates: Partial<BrochureData>) => {
     setData(prev => {
       const newData = { ...prev, ...updates };
-      
-      // Handle duration changes
-      if (updates.duration !== undefined && updates.duration !== prev.duration) {
-        newData.itineraries = initializeItineraries(updates.duration);
-        newData.hotels = initializeHotels(updates.duration);
-      }
-      
+      // 依使用者要求，取消 "天數更改時自動重設同步飯店與行程" 邏汇
       return newData;
     });
   };
@@ -50,10 +45,10 @@ export function BrochureProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addPackingItem = (item: string) => {
+  const addPackingItem = (text: string, important: boolean = false) => {
     setData(prev => ({
       ...prev,
-      packingList: [...prev.packingList, item],
+      packingList: [...prev.packingList, { text, important }],
     }));
   };
 

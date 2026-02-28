@@ -11,34 +11,159 @@
   font-family: 'Noto Sans TC', 'Inter', sans-serif;
 }
 
+body {
+  background-color: #f3f4f6;
+  /* 讓整體預覽區背景有區隔 */
+  margin: 0;
+  padding: 0;
+}
+
+.preview-container {
+  counter-reset: pageNum;
+}
+
+/* 列印專用容器：平時完全隱藏 */
+.print-only-container {
+  display: none !important;
+}
+
+@media print {
+
+  /* 列印時隱藏整個 App 框架（#root），讓 Portal 列印容器成為唯一輸出 */
+  #root {
+    display: none !important;
+  }
+
+  /* 列印專用容器：掛在 body 層級，以正常文件流呈現全版多頁 */
+  .print-only-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* 恢復 .a4-page 的 relative 定位，確保內部頁首/頁尾 absolute 定位正常 */
+  .a4-page {
+    position: relative !important;
+  }
+}
+
+/* Custom Scrollbar for inner elements */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .a4-page {
   width: 210mm;
-  min-height: 297mm;
-  padding: 20mm;
+  height: 297mm;
   margin: 0 auto;
   background: white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  /* 列印時強制換頁 */
+  page-break-after: always;
+  break-after: page;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  /* 防止內容溢出導致邊界問題 */
+}
+
+/* 只要是 .a4-page 就增加頁碼計數 (包含封面、目錄、內頁) */
+.a4-page {
+  counter-increment: pageNum;
+}
+
+/* 頁尾置中頁碼 */
+.page-footer::after {
+  content: "- " counter(pageNum) " -";
+}
+
+/* 頁首奇偶數頁不同 */
+.a4-page:nth-of-type(odd) .page-header {
+  justify-content: flex-end;
+}
+
+.a4-page:nth-of-type(odd) .page-header::after {
+  content: attr(data-header-odd);
+}
+
+.a4-page:nth-of-type(even) .page-header {
+  justify-content: flex-start;
+}
+
+.a4-page:nth-of-type(even) .page-header::after {
+  content: attr(data-header-even);
+}
+
+/* 最後一頁不需要再換頁 */
+.a4-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
 }
 
 @media print {
   .no-print {
     display: none !important;
   }
-  
-  .a4-page {
-    box-shadow: none;
-    margin: 0;
-    width: 100%;
-    min-height: auto;
+
+  /* 確保隱藏的列印內容在此時顯示 */
+  .hidden.print\:block {
+    display: block !important;
+    width: 100% !important;
   }
-  
+
+  html,
   body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 強制每頁都是 A4 大小、完整滿版 */
+  .a4-page {
+    display: block !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: 297mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    position: relative !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .a4-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 }
 
 @page {
-  size: A4;
-  margin: 0;
+  size: A4 portrait;
+  size: 210mm 297mm;
+  margin: 0mm;
 }
