@@ -94,7 +94,7 @@ export function CoverPage() {
             {/* Logo 與 旅行社名稱 (置中排列) */}
             <div className="flex flex-col items-center justify-center gap-6">
               {data.logo && (
-                <div className="bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-sm max-w-[200px]">
+                <div className="max-w-[200px]">
                   <img src={data.logo} alt="Logo" className="w-full h-auto object-contain max-h-24" />
                 </div>
               )}
