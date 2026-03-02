@@ -119,13 +119,40 @@ function App() {
 
   if (view === 'dashboard') {
     return <Dashboard onSelectBrochure={async (id) => {
-      const data = await storage.getBrochure(id);
-      if (data) {
-        setInitialData(data);
+      setLoading(true);
+      let loadedData: BrochureData | null = null;
+
+      if (supabase) {
+        try {
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 8000)
+          );
+          const fetchPromise = supabase.from('brochures').select('data').eq('id', id).single();
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+          if (!error && data && data.data) {
+            loadedData = data.data as BrochureData;
+            // 寫回本機快取
+            storage.saveBrochure(id, loadedData);
+          }
+        } catch (err) {
+          console.warn('點擊列表讀取雲端詳細資料失敗:', err);
+        }
+      }
+
+      if (!loadedData) {
+        loadedData = await storage.getBrochure(id);
+      }
+
+      setLoading(false);
+
+      if (loadedData) {
+        setInitialData(loadedData);
         setCurrentId(id);
         setView('editor');
         // 清除網址的 ?id 除非想要保持雲端連結（點擊雲端儲存時才會再次設定）
         window.history.pushState({}, '', window.location.pathname);
+      } else {
+        alert('無法載入此手冊的詳細資料，可能尚未同步且本機無快取。');
       }
     }} />
   }

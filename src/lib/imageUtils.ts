@@ -35,8 +35,11 @@ export async function compressImage(file: File | Blob, maxWidth = 1200): Promise
                 // 繪製縮小後的圖片
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // 轉換成 JPEG，並將畫質設為 0.75，大幅降低檔案大小
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                // 取得檔案類型，若是 PNG 則使用 webp 格式以保留透明度並支援壓縮
+                const mimeType = file.type === 'image/png' ? 'image/webp' : 'image/jpeg';
+
+                // 轉換成指定的格式，並將畫質設為 0.75，大幅降低檔案大小
+                const compressedDataUrl = canvas.toDataURL(mimeType, 0.75);
                 resolve(compressedDataUrl);
             };
             img.onerror = (error) => reject(error);

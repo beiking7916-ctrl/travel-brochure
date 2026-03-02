@@ -20,17 +20,16 @@ export function Dashboard({ onSelectBrochure }: DashboardProps) {
                 const timeoutPromise = new Promise<never>((_, reject) =>
                     setTimeout(() => reject(new Error('TIMEOUT')), 8000)
                 );
-                // 讀取這張表時，只拿取部分欄位減少流量
-                const fetchPromise = supabase.from('brochures').select('id, data, updated_at, created_at');
+                // 讀取這張表時，只拿取部分欄位減少流量 (透過 json 萃取)
+                const fetchPromise = supabase.from('brochures').select('id, title:data->>title, agency:data->>agency, updated_at, created_at');
                 const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
                 if (!error && data) {
                     const cloudList: BrochureMeta[] = data.map((row: any) => {
-                        const brochureData = row.data as BrochureData;
                         return {
                             id: row.id,
-                            title: brochureData.title || '未命名手冊',
-                            agency: brochureData.agency || '',
+                            title: row.title || '未命名手冊',
+                            agency: row.agency || '',
                             createdAt: row.created_at || new Date().toISOString(),
                             updatedAt: row.updated_at || new Date().toISOString(),
                         };
