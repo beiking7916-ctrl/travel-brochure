@@ -7,16 +7,34 @@ import { compressImage } from '../../lib/imageUtils';
 export function BasicInfoForm() {
   const { data, updateData } = useBrochure();
 
-  const handleImageUpload = async (file: File, type: 'logo' | 'cover') => {
+  const handleImageUpload = async (file: File | string, type: 'logo' | 'cover') => {
     try {
-      const compressedImage = await compressImage(file);
-      if (type === 'logo') {
-        updateData({ logo: compressedImage });
+      if (typeof file === 'string') {
+        // Handle URL string
+        if (type === 'logo') {
+          updateData({ logo: file });
+        } else {
+          updateData({ coverImage: file });
+        }
       } else {
-        updateData({ coverImage: compressedImage });
+        // Handle File object
+        const compressedImage = await compressImage(file);
+        if (type === 'logo') {
+          updateData({ logo: compressedImage });
+        } else {
+          updateData({ coverImage: compressedImage });
+        }
       }
     } catch (error) {
-      console.error(type === 'logo' ? 'Logo 壓縮失敗' : '封面壓縮失敗', error);
+      console.error(type === 'logo' ? 'Logo 處理失敗' : '封面處理失敗', error);
+    }
+  };
+
+  const handleUrlInput = (type: 'logo' | 'cover', e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止觸發 Dropzone
+    const url = window.prompt('請輸入圖片網址 (URL)：\n支援 jpg, png, webp 等格式\n請注意：若來源網站刪除圖片，手冊內的圖片也會失效');
+    if (url && url.trim().startsWith('http')) {
+      handleImageUpload(url.trim(), type);
     }
   };
 
@@ -100,6 +118,12 @@ export function BasicInfoForm() {
               <div className="text-gray-400 flex flex-col items-center gap-2">
                 <ImagePlus size={24} strokeWidth={1.5} />
                 <p className="text-xs font-medium">點擊、拖曳或 <kbd className="bg-gray-100 px-1 rounded text-[10px] mx-0.5 border border-gray-200">Ctrl+V</kbd> 貼上</p>
+                <button
+                  onClick={(e) => handleUrlInput('logo', e)}
+                  className="mt-1 text-xs text-blue-500 hover:text-blue-600 font-medium px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  🔗 貼上圖片網址
+                </button>
               </div>
             )}
           </div>
@@ -128,9 +152,15 @@ export function BasicInfoForm() {
                 </button>
               </>
             ) : (
-              <div className="text-gray-400 flex flex-col items-center gap-2">
+              <div className="text-gray-400 flex flex-col items-center gap-2 relative z-10">
                 <ImagePlus size={24} strokeWidth={1.5} />
                 <p className="text-xs font-medium">點擊、拖曳或 <kbd className="bg-gray-100 px-1 rounded text-[10px] mx-0.5 border border-gray-200">Ctrl+V</kbd> 貼上</p>
+                <button
+                  onClick={(e) => handleUrlInput('cover', e)}
+                  className="mt-1 text-xs text-blue-500 hover:text-blue-600 font-medium px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  🔗 貼上圖片網址
+                </button>
               </div>
             )}
           </div>

@@ -58,7 +58,7 @@ function App() {
 
       if (urlId) {
         // 先嘗試從本機讀取
-        const localData = storage.getBrochure(urlId);
+        const localData = await storage.getBrochure(urlId);
         if (localData) {
           setInitialData(localData);
           setCurrentId(urlId);
@@ -115,13 +115,15 @@ function App() {
   }
 
   if (view === 'dashboard') {
-    return <Dashboard onSelectBrochure={(id) => {
-      const data = storage.getBrochure(id);
-      setInitialData(data);
-      setCurrentId(id);
-      setView('editor');
-      // 清除網址的 ?id 除非想要保持雲端連結（點擊雲端儲存時才會再次設定）
-      window.history.pushState({}, '', window.location.pathname);
+    return <Dashboard onSelectBrochure={async (id) => {
+      const data = await storage.getBrochure(id);
+      if (data) {
+        setInitialData(data);
+        setCurrentId(id);
+        setView('editor');
+        // 清除網址的 ?id 除非想要保持雲端連結（點擊雲端儲存時才會再次設定）
+        window.history.pushState({}, '', window.location.pathname);
+      }
     }} />
   }
 

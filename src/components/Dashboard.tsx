@@ -10,25 +10,27 @@ export function Dashboard({ onSelectBrochure }: DashboardProps) {
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
 
     useEffect(() => {
-        setBrochures(storage.getList());
+        storage.getList().then(setBrochures);
     }, []);
 
-    const handleCreate = () => {
-        const newId = storage.createBrochure();
+    const handleCreate = async () => {
+        const newId = await storage.createBrochure();
         onSelectBrochure(newId);
     };
 
-    const handleDuplicate = (e: React.MouseEvent, id: string) => {
+    const handleDuplicate = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        storage.duplicateBrochure(id);
-        setBrochures(storage.getList()); // 重新載入列表
+        await storage.duplicateBrochure(id);
+        const list = await storage.getList();
+        setBrochures(list); // 重新載入列表
     };
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (window.confirm('確定要刪除這份手冊嗎？這個動作無法復原。')) {
-            storage.deleteBrochure(id);
-            setBrochures(storage.getList());
+            await storage.deleteBrochure(id);
+            const list = await storage.getList();
+            setBrochures(list);
         }
     };
 
