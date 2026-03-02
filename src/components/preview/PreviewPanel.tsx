@@ -12,6 +12,7 @@ import { MapPage } from './MapPage';
 import { PackingPage } from './PackingPage';
 import { TipsPage } from './TipsPage';
 import { TipsGridPage } from './TipsGridPage';
+import { NotesPage } from './NotesPage';
 import type { SectionId } from '../../types';
 
 export function PreviewPanel() {
@@ -135,6 +136,13 @@ export function PreviewPanel() {
               {renderSection(sectionId)}
             </PageContainer>
           ))}
+
+          {/* 筆記頁 (不顯示在目錄，但顯示在最後面) */}
+          {Array.from({ length: data.notesCount || 0 }).map((_, i) => (
+            <PageContainer key={`note-${i}`} id={`note-${i}`} title={`Note Page ${i + 1}`}>
+              <NotesPage pageNumber={i + 1} totalNotes={data.notesCount} />
+            </PageContainer>
+          ))}
         </div>
       </div>
 
@@ -144,6 +152,9 @@ export function PreviewPanel() {
           <CoverPage />
           <TOCPage />
           {visibleSections.map((sectionId) => renderSection(sectionId))}
+          {Array.from({ length: data.notesCount || 0 }).map((_, i) => (
+            <NotesPage key={`print-note-${i}`} pageNumber={i + 1} totalNotes={data.notesCount} />
+          ))}
         </div>,
         document.body
       )}

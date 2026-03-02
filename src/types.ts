@@ -157,6 +157,7 @@ export interface BrochureData {
   tocText?: string; // 新增目錄自訂文字
   tocImage?: string; // 新增目錄自訂圖片
   showTOCItineraryDetails?: boolean; // 新增：目錄是否顯示行程詳情
+  notesCount?: number; // 新增：筆記頁數
   headerLogo?: string; // 新增頁首專屬(客戶) Logo
   headerText?: string; // 新增頁首自訂名稱(客戶名稱)
 }
@@ -321,6 +322,7 @@ export function createDefaultData(): BrochureData {
     tocText: '',
     tocImage: '',
     showTOCItineraryDetails: true,
+    notesCount: 0,
     headerLogo: '',
     headerText: '',
   };

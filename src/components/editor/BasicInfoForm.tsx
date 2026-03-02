@@ -230,6 +230,21 @@ export function BasicInfoForm() {
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">天</span>
             </div>
           </div>
+
+          <div>
+            <label className={labelClassName}>筆記頁數 (空白隨筆)</label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={data.notesCount || 0}
+                onChange={(e) => updateData({ notesCount: parseInt(e.target.value) || 0 })}
+                className={`${inputClassName} pr-8`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">頁</span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -349,7 +364,7 @@ export function BasicInfoForm() {
                 value={data.agency}
                 onChange={(e) => updateData({ agency: e.target.value })}
                 className={inputClassName}
-                placeholder="例如：安天旅行社"
+                placeholder="例如：鑫囍探索旅行社"
               />
             </div>
 
