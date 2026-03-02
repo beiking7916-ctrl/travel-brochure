@@ -61,6 +61,9 @@ export interface Tips {
   luggage: string;
   destination: string; // 回溯相容
   destinationSections?: DestinationSection[]; // 新增：分層注意事項
+  order?: string[]; // 新增：段落排序
+  pageBreaks?: Record<string, boolean>; // 新增：換頁設定
+  customLabels?: Record<string, string>; // 新增：自定義標題
 }
 
 export interface Attraction {

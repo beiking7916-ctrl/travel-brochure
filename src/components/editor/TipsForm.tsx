@@ -1,9 +1,10 @@
 import React, { useCallback } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Lightbulb, AlertCircle, ImagePlus, Trash2 } from 'lucide-react';
+import { Lightbulb, AlertCircle, ImagePlus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { TipItem, Tips } from '../../types';
 import { compressImage } from '../../lib/imageUtils';
+import { RichTextarea } from './RichTextarea';
 
 const CLASSIC_TIPS = [
   { key: 'airport', label: '機場集合與行李準備篇' },
@@ -24,6 +25,30 @@ export function TipsForm() {
 
   const updateClassicTip = (key: keyof Tips, value: string) => {
     updateData({ tips: { ...data.tips, [key]: value } });
+  };
+
+  const currentOrder = data.tips.order || ['airport', 'security', 'immigration', 'luggage', 'destination'];
+
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const newOrder = [...currentOrder];
+    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    updateData({ tips: { ...data.tips, order: newOrder } });
+  };
+
+  const moveDown = (index: number) => {
+    if (index === currentOrder.length - 1) return;
+    const newOrder = [...currentOrder];
+    [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+    updateData({ tips: { ...data.tips, order: newOrder } });
+  };
+
+  const updatePageBreak = (key: string, checked: boolean) => {
+    updateData({ tips: { ...data.tips, pageBreaks: { ...(data.tips.pageBreaks || {}), [key]: checked } } });
+  };
+
+  const updateCustomLabel = (key: string, value: string) => {
+    updateData({ tips: { ...data.tips, customLabels: { ...(data.tips.customLabels || {}), [key]: value } } });
   };
 
   const addDestinationSection = () => {
@@ -69,26 +94,82 @@ export function TipsForm() {
 
       {/* 經典文字版本 */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2" style={{ color: data.theme.primary }}>
-          <AlertCircle size={20} />
-          旅遊注意事項
-        </h3>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2 gap-2">
+          <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
+            <AlertCircle size={20} />
+            旅遊注意事項
+          </h3>
+          <div className="text-[11px] text-gray-500 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100/70 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-semibold text-blue-700 flex items-center gap-1">文字標示語法：</span>
+            <span className="flex items-center gap-1"><code className="bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200 font-mono">**文字**</code> 一般粗體</span>
+            <span className="flex items-center gap-1"><code className="bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200 font-mono">//文字//</code> 系統色粗體</span>
+            <span className="flex items-center gap-1"><code className="bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200 font-mono">[[文字|色碼]]</code> 自訂色粗體</span>
+          </div>
+        </div>
         <div className="space-y-4">
-          {CLASSIC_TIPS.map(({ key, label }) => {
+          {currentOrder.map((key, index) => {
+            const tipItem = CLASSIC_TIPS.find(t => t.key === key);
+            if (!tipItem) return null;
+            const { label } = tipItem;
+
+            const isPageBreak = data.tips.pageBreaks?.[key] || false;
+
+            const headerActions = (
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-gray-500 hover:text-gray-800 bg-gray-50 px-2 py-1.5 rounded border border-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={isPageBreak}
+                    onChange={(e) => updatePageBreak(key, e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  這段換新頁
+                </label>
+                <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+                  <button
+                    onClick={() => moveUp(index)}
+                    disabled={index === 0}
+                    className="p-1 px-2 flex items-center gap-1 bg-white border border-gray-200 rounded text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 disabled:hover:text-gray-500 disabled:hover:bg-white disabled:hover:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                    title="上移"
+                  >
+                    <ArrowUp size={14} /> 上移
+                  </button>
+                  <button
+                    onClick={() => moveDown(index)}
+                    disabled={index === currentOrder.length - 1}
+                    className="p-1 px-2 flex items-center gap-1 bg-white border border-gray-200 rounded text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 disabled:hover:text-gray-500 disabled:hover:bg-white disabled:hover:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                    title="下移"
+                  >
+                    <ArrowDown size={14} /> 下移
+                  </button>
+                </div>
+              </div>
+            );
+
             if (key === 'destination') {
               return (
-                <div key={key} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className={labelClassName}>{label}</label>
-                    <button
-                      onClick={addDestinationSection}
-                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline underline-offset-4"
-                    >
-                      + 新增分層標題
-                    </button>
+                <div key={key} className="space-y-3 p-4 bg-white border border-gray-200 rounded-xl relative group">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <input
+                      type="text"
+                      value={data.tips.customLabels?.[key] ?? label}
+                      onChange={(e) => updateCustomLabel(key, e.target.value)}
+                      className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0 w-1/2`}
+                      style={{ color: data.theme.primary }}
+                    />
+                    <div className="flex gap-4 items-center">
+                      <button
+                        onClick={addDestinationSection}
+                        className="text-[12px] font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                      >
+                        + 新增分層標題
+                      </button>
+                      {headerActions}
+                    </div>
                   </div>
 
-                  <textarea
+                  <RichTextarea
+                    themeColor={data.theme.primary}
                     value={data.tips.destination || ''}
                     onChange={(e) => updateClassicTip('destination', e.target.value)}
                     className={`${inputClassName} h-24 mb-3`}
@@ -112,7 +193,8 @@ export function TipsForm() {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <textarea
+                      <RichTextarea
+                        themeColor={data.theme.primary}
                         value={section.content}
                         onChange={(e) => updateDestinationSection(sIdx, 'content', e.target.value)}
                         className={`${inputClassName} h-20`}
@@ -124,12 +206,23 @@ export function TipsForm() {
               );
             }
             return (
-              <div key={key}>
-                <label className={labelClassName}>{label}</label>
-                <textarea
-                  value={data.tips[key as keyof Tips] as string}
+              <div key={key} className="space-y-3 p-4 bg-white border border-gray-200 rounded-xl relative group">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <input
+                    type="text"
+                    value={data.tips.customLabels?.[key] ?? label}
+                    onChange={(e) => updateCustomLabel(key, e.target.value)}
+                    className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0 w-1/2`}
+                    style={{ color: data.theme.primary }}
+                  />
+                  {headerActions}
+                </div>
+                <RichTextarea
+                  themeColor={data.theme.primary}
+                  value={data.tips[key as keyof Tips] as string || ''}
                   onChange={(e) => updateClassicTip(key as keyof Tips, e.target.value)}
-                  className={`${inputClassName} h-20`}
+                  className={`${inputClassName} h-24`}
+                  placeholder={`輸入${label}說明...`}
                 />
               </div>
             );
@@ -173,7 +266,8 @@ export function TipsForm() {
                     onRemove={removeImage}
                   />
 
-                  <textarea
+                  <RichTextarea
+                    themeColor={data.theme.primary}
                     value={tip.content}
                     onChange={(e) => updateGridTip(index, 'content', e.target.value)}
                     className={`${inputClassName} flex-1 resize-none text-xs leading-relaxed`}

@@ -2,6 +2,7 @@ import React from 'react';
 import { useBrochure } from '../../context/BrochureContext';
 import { Lightbulb, AlertCircle } from 'lucide-react';
 import { PageWrapper } from './PageWrapper';
+import { parseRichText } from '../../lib/textParser';
 
 // 預設 SVG 圖示對應表 (如果使用者沒有自行上傳)
 const defaultIcons: Record<string, string> = {
@@ -40,7 +41,13 @@ export function TipsPage() {
       return text.length + newlines * 50;
     };
 
-    Object.entries(CLASSIC_TIPS_LABELS).forEach(([key, label]) => {
+    const currentOrder = data.tips.order || Object.keys(CLASSIC_TIPS_LABELS);
+
+    currentOrder.forEach((key) => {
+      const defaultLabel = CLASSIC_TIPS_LABELS[key as keyof typeof CLASSIC_TIPS_LABELS];
+      if (!defaultLabel) return;
+      const label = data.tips.customLabels?.[key] ?? defaultLabel;
+
       const content = data.tips[key as keyof typeof CLASSIC_TIPS_LABELS] as string;
       const sections = key === 'destination' ? data.tips.destinationSections : [];
 
@@ -49,8 +56,11 @@ export function TipsPage() {
       let currentMainItem = { key, label, content: content || '', sections: [] as any[] };
       let itemChars = estimateChars(content) + 120; // +120 for header overhead
 
-      // 如果當前頁面放不下這段主內容，且當前頁面不是空的，就換新頁
-      if (currentPageChars + itemChars > MAX_CHARS_PER_PAGE && currentPageItems.length > 0) {
+      // 是否使用者勾選強迫換頁
+      const forcePageBreak = data.tips.pageBreaks?.[key];
+
+      // 如果有設定換頁，或者當前頁面放不下這段主內容，且當前頁面不是空的，就換新頁
+      if ((forcePageBreak || currentPageChars + itemChars > MAX_CHARS_PER_PAGE) && currentPageItems.length > 0) {
         pagesArray.push(currentPageItems);
         currentPageItems = [];
         currentPageChars = 0;
@@ -111,7 +121,7 @@ export function TipsPage() {
 
                     {item.content && (
                       <p className="text-gray-600 leading-relaxed text-justify whitespace-pre-wrap mb-4 font-medium italic">
-                        {item.content}
+                        {parseRichText(item.content, data.theme.primary)}
                       </p>
                     )}
 
@@ -124,7 +134,7 @@ export function TipsPage() {
                               {section.title}
                             </h4>
                             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                              {section.content}
+                              {parseRichText(section.content, data.theme.primary)}
                             </p>
                           </div>
                         ))}

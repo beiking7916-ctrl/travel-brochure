@@ -2,6 +2,7 @@ import React from 'react';
 import { useBrochure } from '../../context/BrochureContext';
 import { Lightbulb } from 'lucide-react';
 import { PageWrapper } from './PageWrapper';
+import { parseRichText } from '../../lib/textParser';
 
 // 預設 SVG 圖示對應表 (如果使用者沒有自行上傳)
 const defaultIcons: Record<string, string> = {
@@ -53,7 +54,7 @@ export function TipsGridPage() {
 
                                 <div className="flex-1 flex flex-col justify-end">
                                     <p className="text-[11px] leading-relaxed text-gray-700 whitespace-pre-wrap flex-grow-0">
-                                        {tip.content}
+                                        {parseRichText(tip.content, data.theme.primary)}
                                     </p>
                                 </div>
                             </div>
