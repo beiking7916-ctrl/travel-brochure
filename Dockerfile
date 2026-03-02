@@ -28,8 +28,8 @@ RUN mkdir -p /usr/share/nginx/html/travel-brochure
 # 將編譯好的靜態檔案複製到 Nginx 的服務目錄
 COPY --from=build /app/dist /usr/share/nginx/html/travel-brochure
 
-# 開放 port 80
+# 開放 port (保留給本地端參考)
 EXPOSE 80
 
-# 啟動 Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# 啟動時讀取 Zeabur 提供的 PORT 環境變數（預設 fallback 為 80）並寫入 Nginx 設定，然後啟動
+CMD sh -c "sed -i 's/listen 80;/listen '\"${PORT:-80}\"';/g' /etc/nginx/conf.d/nginx.conf && exec nginx -g 'daemon off;'"
