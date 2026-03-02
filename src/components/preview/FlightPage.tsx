@@ -175,7 +175,7 @@ export function FlightPage() {
             <div className="bg-white rounded-xl overflow-hidden shadow-inner">
               <img src={data.meetingMap} alt="Airport Meeting Map" className="w-full h-auto max-h-[200px] object-contain" />
             </div>
-            <p className="text-center text-[10px] font-bold text-gray-400 mt-2 tracking-widest uppercase">Airport Meeting Terminal Map</p>
+            <p className="text-center text-[10px] font-bold text-gray-400 mt-2 tracking-widest uppercase">機場集合地圖</p>
           </div>
         )}
       </div>
