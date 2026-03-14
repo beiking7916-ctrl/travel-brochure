@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { auth } from '../lib/auth';
-import { Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
 interface LoginProps {
     onLoginSuccess: () => void;
 }
 
 export function Login({ onLoginSuccess }: LoginProps) {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -18,11 +18,11 @@ export function Login({ onLoginSuccess }: LoginProps) {
         setIsLoading(true);
 
         try {
-            const success = await auth.login(username, password);
+            const success = await auth.login(email, password);
             if (success) {
                 onLoginSuccess();
             } else {
-                setError('帳號或密碼錯誤');
+                setError('信箱或密碼錯誤');
             }
         } catch (err) {
             setError('系統發生錯誤，請稍後再試');
@@ -39,7 +39,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                         <Lock className="text-blue-600" size={32} />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">旅遊手冊主控台</h1>
-                    <p className="text-gray-500">請登入您的管理員帳號以繼續</p>
+                    <p className="text-gray-500">請登入您的管理員信箱以繼續</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
@@ -53,19 +53,19 @@ export function Login({ onLoginSuccess }: LoginProps) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                帳號
+                                電子信箱
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <User className="text-gray-400" size={18} />
+                                    <Mail className="text-gray-400" size={18} />
                                 </div>
                                 <input
-                                    type="text"
+                                    type="email"
                                     required
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    placeholder="請輸入管理員帳號"
+                                    placeholder="例如: admin@agency.com"
                                 />
                             </div>
                         </div>

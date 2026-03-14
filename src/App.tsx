@@ -5,7 +5,6 @@ import { PreviewPanel } from './components/preview/PreviewPanel';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
-import { AdminUsers } from './components/AdminUsers';
 import { auth } from './lib/auth';
 import { supabase } from './lib/supabase';
 import { storage } from './lib/storage';
@@ -50,21 +49,21 @@ function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackT
 }
 
 function App() {
-  const [view, setView] = useState<'login' | 'dashboard' | 'editor' | 'admin_users'>('login');
+  const [view, setView] = useState<'login' | 'dashboard' | 'editor'>('login');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<BrochureData | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      // 1. 檢查登入狀態
-      const currentUser = auth.getCurrentUser();
+      // 1. 檢查登入狀態 (非同步從 Supabase 取得 session)
+      const currentUser = await auth.getCurrentUser();
       
       // 2. 處理網址參數
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = urlParams.get('id');
 
-      // 如果未登入，強制導向登入頁面 (把網址的 id 先存著或忽略，這裡選擇需要登入後才能看)
+      // 如果未登入，強制導向登入頁面
       if (!currentUser) {
          setView('login');
          setLoading(false);
@@ -148,15 +147,10 @@ function App() {
     }} />;
   }
 
-  if (view === 'admin_users') {
-    return <AdminUsers onBack={() => setView('dashboard')} />;
-  }
-
   if (view === 'dashboard') {
     return <Dashboard 
-      onOpenAdminUsers={() => setView('admin_users')}
-      onLogout={() => {
-        auth.logout();
+      onLogout={async () => {
+        await auth.logout();
         setView('login');
       }}
       onSelectBrochure={async (id) => {
