@@ -4,6 +4,9 @@ import { EditorPanel } from './components/editor/EditorPanel';
 import { PreviewPanel } from './components/preview/PreviewPanel';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
+import { Login } from './components/Login';
+import { AdminUsers } from './components/AdminUsers';
+import { auth } from './lib/auth';
 import { supabase } from './lib/supabase';
 import { storage } from './lib/storage';
 import type { BrochureData } from './types';
@@ -47,16 +50,28 @@ function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackT
 }
 
 function App() {
-  const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
+  const [view, setView] = useState<'login' | 'dashboard' | 'editor' | 'admin_users'>('login');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<BrochureData | null>(null);
 
   useEffect(() => {
     async function loadData() {
+      // 1. 檢查登入狀態
+      const currentUser = auth.getCurrentUser();
+      
+      // 2. 處理網址參數
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = urlParams.get('id');
 
+      // 如果未登入，強制導向登入頁面 (把網址的 id 先存著或忽略，這裡選擇需要登入後才能看)
+      if (!currentUser) {
+         setView('login');
+         setLoading(false);
+         return;
+      }
+      
+      // 如果已登入，且有 urlId，則載入該手冊進入 editor
       if (urlId) {
         // 優先嘗試從 Supabase 雲端讀取
         if (supabase) {
@@ -103,6 +118,9 @@ function App() {
           return;
         }
       }
+      
+      // 已登入但沒有 urlId，進入 dashboard
+      setView('dashboard');
       setLoading(false);
     }
 
@@ -118,8 +136,30 @@ function App() {
     );
   }
 
+  if (view === 'login') {
+    return <Login onLoginSuccess={() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('id')) {
+         // 若登入前有夾帶 id，登入後重新整理讓他走 loadData 邏輯
+         window.location.reload();
+      } else {
+         setView('dashboard');
+      }
+    }} />;
+  }
+
+  if (view === 'admin_users') {
+    return <AdminUsers onBack={() => setView('dashboard')} />;
+  }
+
   if (view === 'dashboard') {
-    return <Dashboard onSelectBrochure={async (id) => {
+    return <Dashboard 
+      onOpenAdminUsers={() => setView('admin_users')}
+      onLogout={() => {
+        auth.logout();
+        setView('login');
+      }}
+      onSelectBrochure={async (id) => {
       setLoading(true);
       let loadedData: BrochureData | null = null;
 

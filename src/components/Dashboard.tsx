@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { storage, BrochureMeta } from '../lib/storage';
-import { FileText, Plus, Copy, Trash2, Calendar } from 'lucide-react';
+import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { auth } from '../lib/auth';
 import type { BrochureData } from '../types';
 
 interface DashboardProps {
     onSelectBrochure: (id: string) => void;
+    onOpenAdminUsers: () => void;
+    onLogout: () => void;
 }
 
-export function Dashboard({ onSelectBrochure }: DashboardProps) {
+export function Dashboard({ onSelectBrochure, onOpenAdminUsers, onLogout }: DashboardProps) {
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
 
     const loadList = async () => {
@@ -140,13 +143,32 @@ export function Dashboard({ onSelectBrochure }: DashboardProps) {
                     <FileText size={24} className="text-blue-600" />
                     旅遊手冊主控台
                 </h1>
-                <button
-                    onClick={handleCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                    <Plus size={18} />
-                    建立新草稿
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={onOpenAdminUsers}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition-colors border border-gray-200"
+                        title="人員管理"
+                    >
+                        <Shield size={18} className="text-purple-600" />
+                        <span className="hidden sm:inline">人員管理</span>
+                    </button>
+                    <button
+                        onClick={onLogout}
+                        className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors border border-transparent"
+                        title="登出系統"
+                    >
+                        <LogOut size={18} />
+                        <span className="hidden sm:inline">登出</span>
+                    </button>
+                    <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                    <button
+                        onClick={handleCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                        <Plus size={18} />
+                        建立新草稿
+                    </button>
+                </div>
             </header>
 
             <main className="flex-1 p-8 overflow-y-auto">

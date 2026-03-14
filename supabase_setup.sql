@@ -29,10 +29,25 @@ CREATE TABLE IF NOT EXISTS public.attractions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 追加：建立管理使用者表格
+CREATE TABLE IF NOT EXISTS public.admin_users (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'admin',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 預設插入初始管理員：kenkenadmin / root7916 (使用 bcrypt hash: $2a$10$tZ8Q7S/0890qEw4vE/Ifm.n4o8c3zW2bF6iL.X.e4gR/V848m6kRK)
+INSERT INTO public.admin_users (username, password_hash)
+VALUES ('kenkenadmin', '$2a$10$tZ8Q7S/0890qEw4vE/Ifm.n4o8c3zW2bF6iL.X.e4gR/V848m6kRK')
+ON CONFLICT (username) DO NOTHING;
+
 -- 4. 開啟 Row Level Security (RLS) 並設定公開存取策略
 ALTER TABLE public.brochures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.countries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attractions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 
 -- brochures: 允許匿名讀寫（因為使用 anon key）
 DROP POLICY IF EXISTS "Allow anon read brochures" ON public.brochures;
@@ -64,6 +79,16 @@ CREATE POLICY "Allow public read attractions" ON public.attractions
 DROP POLICY IF EXISTS "Allow anon write attractions" ON public.attractions;
 CREATE POLICY "Allow anon write attractions" ON public.attractions
     FOR ALL USING (true);
+
+-- admin_users: 為了方便前端登入與管理，允許所有人讀寫 (實務上應加強安全性)
+DROP POLICY IF EXISTS "Allow anon read admin_users" ON public.admin_users;
+CREATE POLICY "Allow anon read admin_users" ON public.admin_users
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow anon write admin_users" ON public.admin_users;
+CREATE POLICY "Allow anon write admin_users" ON public.admin_users
+    FOR ALL USING (true);
+
 
 -- 5. 建立索引加速查詢
 CREATE INDEX IF NOT EXISTS idx_attractions_country_code ON public.attractions(country_code);
