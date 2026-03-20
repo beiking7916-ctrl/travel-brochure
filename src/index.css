@@ -174,24 +174,44 @@ body {
     background: white !important;
   }
 
+  /* 當處於封面列印模式時，隱藏普通的 A5 頁面，但保留跨頁內的元件 */
   body.print-cover-mode .a5-page {
     display: none !important;
+  }
+
+  body.print-cover-mode .a4-landscape-page .a5-page {
+    display: flex !important; /* 強制回復顯示 */
+    width: 50% !important;
+    height: 100% !important;
+    flex: 0 0 50% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: unset !important;
+    break-after: unset !important;
+  }
+
+  /* 在中間加一個淺灰色的折線虛線供參考 */
+  .a4-landscape-page .a5-page:first-child {
+    border-right: 1px dashed #ddd !important;
+  }
+
+  /* 當處於封面列印模式時，顯現跨頁容器 */
+  body.print-cover-mode .a4-landscape-page {
+    display: flex !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: hidden !important;
   }
 
   /* 當處於標準手冊模式時，隱藏 A4 跨頁 */
   body:not(.print-cover-mode) .a4-landscape-page {
     display: none !important;
-  }
-
-  /* 跨頁中的 A5 頁面，寬度填滿 50% 並移除邊界 */
-  .a4-landscape-page > .a5-page {
-    width: 50% !important;
-    height: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 !important;
-    page-break-after: auto !important;
-    break-after: auto !important;
   }
 }
 

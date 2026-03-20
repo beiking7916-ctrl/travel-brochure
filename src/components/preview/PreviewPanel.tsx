@@ -165,12 +165,8 @@ export function PreviewPanel() {
         <div className="print-only-container">
           {/* A4 封面+封底跨頁列印 (第一頁) */}
           <div className="a4-landscape-page print-a4-landscape">
-             <div className="flex-1 overflow-hidden" style={{ transform: 'scale(1)', transformOrigin: 'top left' }}>
-                <BackCoverPage />
-             </div>
-             <div className="flex-1 overflow-hidden pointer-events-none" style={{ borderLeft: '1px dashed #eee' }}>
-                <CoverPage />
-             </div>
+            <BackCoverPage />
+            <CoverPage />
           </div>
 
           <CoverPage />
