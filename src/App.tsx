@@ -72,47 +72,16 @@ function App() {
       
       // 如果已登入，且有 urlId，則載入該手冊進入 editor
       if (urlId) {
-        // 優先嘗試從 Supabase 雲端讀取
-        if (supabase) {
-          try {
-            const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('TIMEOUT')), 8000)
-            );
-
-            const fetchPromise = supabase
-              .from('brochures')
-              .select('data')
-              .eq('id', urlId)
-              .single();
-
-            const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-
-            if (error) throw error;
-            if (data && data.data) {
-              const cloudData = data.data as BrochureData;
-              // 寫回本機快取，確保兩邊同步
-              storage.saveBrochure(urlId, cloudData);
-              setInitialData(cloudData);
-              setCurrentId(urlId);
-              setView('editor');
-              setLoading(false);
-              return; // 成功讀取雲端後直接返回
-            }
-          } catch (err: any) {
-            if (err?.name === 'AbortError' || err?.message === 'TIMEOUT') {
-              console.warn('雲端載入超時，改由本機快取嘗試讀取');
-            } else {
-              console.warn('雲端載入失敗或無資料:', err?.message);
-            }
+        const cloudData = await storage.getBrochure(urlId);
+        if (cloudData) {
+          if (cloudData.isDeleted) {
+            alert('此手冊已被作廢，無法編輯。');
+            setView('dashboard');
+          } else {
+            setInitialData(cloudData);
+            setCurrentId(urlId);
+            setView('editor');
           }
-        }
-
-        // 雲端讀取失敗或未設定 Supabase，降級嘗試從本機讀取
-        const localData = await storage.getBrochure(urlId);
-        if (localData) {
-          setInitialData(localData);
-          setCurrentId(urlId);
-          setView('editor');
           setLoading(false);
           return;
         }
@@ -155,28 +124,7 @@ function App() {
       }}
       onSelectBrochure={async (id) => {
       setLoading(true);
-      let loadedData: BrochureData | null = null;
-
-      if (supabase) {
-        try {
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT')), 8000)
-          );
-          const fetchPromise = supabase.from('brochures').select('data').eq('id', id).single();
-          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-          if (!error && data && data.data) {
-            loadedData = data.data as BrochureData;
-            // 寫回本機快取
-            storage.saveBrochure(id, loadedData);
-          }
-        } catch (err) {
-          console.warn('點擊列表讀取雲端詳細資料失敗:', err);
-        }
-      }
-
-      if (!loadedData) {
-        loadedData = await storage.getBrochure(id);
-      }
+      const loadedData = await storage.getBrochure(id);
 
       setLoading(false);
 

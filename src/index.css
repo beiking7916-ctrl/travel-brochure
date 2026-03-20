@@ -156,10 +156,43 @@ body {
     page-break-after: auto !important;
     break-after: auto !important;
   }
+
+  /* 跨頁 A4 橫式樣式 */
+  .a4-landscape-page {
+    width: 297mm !important;
+    height: 210mm !important;
+    display: flex !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  /* 跨頁中的 A5 頁面，寬度填滿 50% 並移除邊界 */
+  .a4-landscape-page > .a5-page {
+    width: 50% !important;
+    height: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 }
 
 @page {
   size: A5 portrait;
-  size: 148mm 210mm;
   margin: 0mm;
+}
+
+/* 用於特殊 A4 橫向列印頁面 (如封面跨頁) */
+@page a4-landscape {
+  size: A4 landscape;
+  margin: 0mm;
+}
+
+.print-a4-landscape {
+  page: a4-landscape;
 }

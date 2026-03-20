@@ -8,38 +8,47 @@ export interface BrochureMeta {
     agency?: string;
     createdAt: string;
     updatedAt: string;
+    isDeleted?: boolean;
 }
 
 const STORAGE_KEY_PREFIX = 'travel_brochure_';
 const LIST_KEY = 'travel_brochure_list';
 
 export const storage = {
-    // 取得手冊列表（合併雲端與本機）
+    // 取得手冊列表（主要從雲端抓取，若無則才降級本機）
     async getList(): Promise<BrochureMeta[]> {
         try {
-            // 優先取得雲端資料（如果 supabase 已設定）
             if (supabase) {
+                // 優化：僅抓取 Metadata，不抓取完整巨大的 data 物件
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, data, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, isDeleted:data->>isDeleted, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
-                    const cloudList: BrochureMeta[] = cloudData.map(item => ({
-                        id: item.id,
-                        title: item.data.title || '未命名手冊',
-                        agency: item.data.agency || '',
-                        createdAt: item.created_at,
-                        updatedAt: item.updated_at
-                    }));
-                    // 同步回本機列表
+                    const cloudList: BrochureMeta[] = cloudData
+                        .filter((item: any) => {
+                             // 過濾掉標記為 isDeleted 的資料 (JSON path 提取出來會是字串)
+                            return item.isDeleted !== 'true' && item.isDeleted !== true;
+                        })
+                        .map((item: any) => ({
+                            id: item.id,
+                            title: item.title || '未命名手冊',
+                            agency: item.agency || '',
+                            createdAt: item.created_at,
+                            updatedAt: item.updated_at,
+                            isDeleted: false
+                        }));
+                    
+                    // 同步到本機列表快取
                     await set(LIST_KEY, cloudList);
                     return cloudList;
                 }
             }
             
+            // 雲端失敗或未登入才看本機
             const list = await get(LIST_KEY);
-            return list || [];
+            return (list || []).filter((m: any) => !m.isDeleted);
         } catch (error) {
             console.error('取得列表失敗：', error);
             return [];
@@ -55,14 +64,11 @@ export const storage = {
         }
     },
 
-    // 取得單一手冊內容
+    // 取得單一手冊內容（優先雲端）
     async getBrochure(id: string): Promise<BrochureData | null> {
         try {
-            // 先看本機有沒有
-            let data = await get(`${STORAGE_KEY_PREFIX}${id}`);
-            
-            // 如果本機沒有且有雲端，從雲端抓取
-            if (!data && supabase) {
+            // 1. 優先從雲端抓取以確保最新
+            if (supabase) {
                 const { data: cloudItem, error } = await supabase
                     .from('brochures')
                     .select('data')
@@ -70,11 +76,16 @@ export const storage = {
                     .single();
                 
                 if (!error && cloudItem) {
-                    data = cloudItem.data;
-                    await set(`${STORAGE_KEY_PREFIX}${id}`, data); // 存回本機快取
+                    const data = cloudItem.data as BrochureData;
+                    // 同步回本機快取
+                    await set(`${STORAGE_KEY_PREFIX}${id}`, data);
+                    return data;
                 }
             }
-            return data || null;
+
+            // 2. 雲端失敗或沒網路時，才看本機
+            const localData = await get(`${STORAGE_KEY_PREFIX}${id}`);
+            return localData || null;
         } catch {
             return null;
         }
@@ -149,7 +160,7 @@ export const storage = {
         return newId;
     },
 
-    // 刪除手冊（同步刪除雲端）
+    // 刪除手冊（實體刪除本機，雲端嘗試刪除）
     async deleteBrochure(id: string): Promise<void> {
         // 刪除本機
         await del(`${STORAGE_KEY_PREFIX}${id}`);
@@ -161,11 +172,23 @@ export const storage = {
                 .delete()
                 .eq('id', id);
             
-            if (error) console.error('雲端刪除失敗：', error.message);
+            if (error) {
+                 console.warn('雲端刪除失敗（可能是 RLS 限制實體刪除），改嘗試作廢機制。');
+                 await this.invalidateBrochure(id);
+            }
         }
 
         // 從列表移除
         const list = await this.getList();
         await this.saveList(list.filter(item => item.id !== id));
+    },
+
+    // 作廢手冊機制 (Invalidate)
+    async invalidateBrochure(id: string): Promise<void> {
+        const data = await this.getBrochure(id);
+        if (data) {
+            data.isDeleted = true;
+            await this.saveBrochure(id, data);
+        }
     }
 };

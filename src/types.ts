@@ -185,6 +185,7 @@ export interface BrochureData {
   showRoomNumber?: boolean; // 新增：是否顯示房號
   headerLogo?: string; // 新增頁首專屬(客戶) Logo
   headerText?: string; // 新增頁首自訂名稱(客戶名稱)
+  isDeleted?: boolean; // 新增：是否已作廢
 }
 
 export const defaultTheme: ThemeColors = {

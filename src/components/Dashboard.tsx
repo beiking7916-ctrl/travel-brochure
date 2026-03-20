@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage, BrochureMeta } from '../lib/storage';
-import { FileText, Plus, Copy, Trash2, Calendar, LogOut } from 'lucide-react';
+import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/auth';
 import type { BrochureData } from '../types';
@@ -14,52 +14,9 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
 
     const loadList = async () => {
-        let mergedList: BrochureMeta[] = [];
-        let hasLoadedCloud = false;
-
-        if (supabase) {
-            try {
-                const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('TIMEOUT')), 8000)
-                );
-                // 讀取這張表時，拿取 isDeleted 判斷是否作廢
-                const fetchPromise = supabase.from('brochures').select('id, title:data->>title, agency:data->>agency, isDeleted:data->>isDeleted, updated_at, created_at');
-                const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-
-                if (!error && data) {
-                    const cloudList: BrochureMeta[] = data
-                        .filter((row: any) => row.isDeleted !== 'true' && row.isDeleted !== true)
-                        .map((row: any) => {
-                            return {
-                                id: row.id,
-                                title: row.title || '未命名手冊',
-                                agency: row.agency || '',
-                                createdAt: row.created_at || new Date().toISOString(),
-                                updatedAt: row.updated_at || new Date().toISOString(),
-                            };
-                        });
-
-                    mergedList = [...cloudList];
-                    hasLoadedCloud = true;
-                }
-            } catch (e) {
-                console.warn('載入雲端列表失敗，降級為本地列表', e);
-            }
-        }
-
-        const localList = await storage.getList();
-
-        if (hasLoadedCloud) {
-            // 合併本地和雲端列表 (過濾掉雲端已有的)
-            const cloudIds = new Set(mergedList.map(m => m.id));
-            mergedList = [...mergedList, ...localList.filter(l => !cloudIds.has(l.id))];
-        } else {
-            mergedList = localList;
-        }
-
-        // 以更新時間排序 (新到舊)
-        mergedList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-        setBrochures(mergedList);
+        const list = await storage.getList();
+        // storage.getList 內部已經處理過雲端優先與 isDeleted 過濾
+        setBrochures(list);
     };
 
     useEffect(() => {
@@ -101,25 +58,16 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (window.confirm('確定要刪除這份手冊嗎？這個動作無法復原。')) {
-            if (supabase) {
-                try {
-                    // 加上 .select() 來驗證是否真的有刪除到資料（RLS 阻擋通常不會報錯，而是回傳 0 筆資料）
-                    const { data, error } = await supabase.from('brochures').delete().eq('id', id).select();
-                    if (error || !data || data.length === 0) {
-                        console.warn('實體刪除失敗或被安全機制阻擋，嘗試使用軟刪除 (標記作廢隱藏)...', error);
-                        // 取得當前資料並加上 isDeleted 標記，因為 update 沒有被限制
-                        const { data: existingData } = await supabase.from('brochures').select('data').eq('id', id).single();
-                        if (existingData && existingData.data) {
-                            const newData = { ...(existingData.data as any), isDeleted: true };
-                            await supabase.from('brochures').update({ data: newData }).eq('id', id);
-                        }
-                    }
-                } catch (error) {
-                    console.error('刪除或作廢雲端資料發生錯誤', error);
-                }
-            }
+        if (window.confirm('確定要「永久刪除」這份手冊嗎？此動作將嘗試從雲端與本機同時抹除，無法復原。')) {
             await storage.deleteBrochure(id);
+            await loadList();
+        }
+    };
+
+    const handleInvalidate = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.confirm('確定要「作廢」這份手冊嗎？作廢後手冊將從草稿清單中隱藏，但資料仍保留在雲端。')) {
+            await storage.invalidateBrochure(id);
             await loadList();
         }
     };
@@ -218,13 +166,24 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
                                                 <Copy size={16} />
                                                 複製
                                             </button>
-                                            <button
-                                                onClick={(e) => handleDelete(e, meta.id)}
-                                                className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => handleInvalidate(e, meta.id)}
+                                                        className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors p-1 hover:bg-amber-50 rounded"
+                                                        title="作廢手冊"
+                                                    >
+                                                        <Archive size={16} />
+                                                        <span className="hidden lg:inline text-xs">作廢</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, meta.id)}
+                                                        className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded"
+                                                        title="永久刪除"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                     </div>
                                 ))}
                             </div>

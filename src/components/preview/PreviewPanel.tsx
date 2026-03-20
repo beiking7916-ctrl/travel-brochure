@@ -15,6 +15,7 @@ import { TipsGridPage } from './TipsGridPage';
 import { NotesPage } from './NotesPage';
 import { RoomingListPage } from './RoomingListPage';
 import { CustomPage } from './CustomPage';
+import { BackCoverPage } from './BackCoverPage';
 import type { SectionId } from '../../types';
 
 export function PreviewPanel() {
@@ -152,18 +153,33 @@ export function PreviewPanel() {
               <NotesPage totalNotes={data.notesCount} />
             </PageContainer>
           ))}
+
+          <PageContainer id="back-cover" title="Back Cover Page">
+            <BackCoverPage />
+          </PageContainer>
         </div>
       </div>
 
       {/* 列印專用容器（透過 Portal 掛到 body，脫離 w-3/5 容器限制） */}
       {ReactDOM.createPortal(
         <div className="print-only-container">
+          {/* A4 封面+封底跨頁列印 (第一頁) */}
+          <div className="a4-landscape-page print-a4-landscape">
+             <div className="flex-1 overflow-hidden" style={{ transform: 'scale(1)', transformOrigin: 'top left' }}>
+                <BackCoverPage />
+             </div>
+             <div className="flex-1 overflow-hidden pointer-events-none" style={{ borderLeft: '1px dashed #eee' }}>
+                <CoverPage />
+             </div>
+          </div>
+
           <CoverPage />
           <TOCPage />
           {visibleSections.map((sectionId) => renderSection(sectionId))}
           {Array.from({ length: data.notesCount || 0 }).map((_, i) => (
             <NotesPage key={`print-note-${i}`} totalNotes={data.notesCount} />
           ))}
+          <BackCoverPage />
         </div>,
         document.body
       )}
