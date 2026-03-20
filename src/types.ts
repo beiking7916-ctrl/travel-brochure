@@ -186,6 +186,8 @@ export interface BrochureData {
   headerLogo?: string; // 新增頁首專屬(客戶) Logo
   headerText?: string; // 新增頁首自訂名稱(客戶名稱)
   isDeleted?: boolean; // 新增：是否已作廢
+  showAgencyOnCover?: boolean; // 新增：封面是否顯示旅行社名稱
+  backCoverText?: string; // 新增：封底自訂文字
 }
 
 export const defaultTheme: ThemeColors = {
@@ -361,6 +363,7 @@ export function createDefaultData(): BrochureData {
     notesCount: 0,
     headerLogo: '',
     headerText: '',
+    showAgencyOnCover: true,
   };
 }
 

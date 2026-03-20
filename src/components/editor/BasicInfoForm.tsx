@@ -365,6 +365,18 @@ export function BasicInfoForm() {
                 className={inputClassName}
                 placeholder="例如：鑫囍探索旅行社"
               />
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showAgencyOnCover"
+                  checked={data.showAgencyOnCover !== false}
+                  onChange={(e) => updateData({ showAgencyOnCover: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors cursor-pointer"
+                />
+                <label htmlFor="showAgencyOnCover" className="text-xs font-semibold text-gray-500 cursor-pointer select-none">
+                  在封面顯示旅行社名稱
+                </label>
+              </div>
             </div>
 
             {/* Logo Upload */}
@@ -440,6 +452,17 @@ export function BasicInfoForm() {
               className={inputClassName}
               placeholder="預設為手冊標題或旅行社名稱"
             />
+          </div>
+
+          <div className="pt-4 mt-2 border-t border-blue-100/50">
+            <label className={labelClassName}>封底自訂文字內容</label>
+            <textarea
+              value={data.backCoverText || ''}
+              onChange={(e) => updateData({ backCoverText: e.target.value })}
+              className={`${inputClassName} h-24 resize-none`}
+              placeholder="例如：感謝支持、公司地址、各區聯絡處、法律規定事項等..."
+            />
+            <p className="mt-1.5 text-[10px] text-gray-400">※ 此段文字會顯示在封底旅行社名稱下方，支援多行分段。</p>
           </div>
         </div>
       </div>

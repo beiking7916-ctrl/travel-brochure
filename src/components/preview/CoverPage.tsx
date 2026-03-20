@@ -98,7 +98,7 @@ export function CoverPage() {
                   <img src={data.logo} alt="Logo" className="w-full h-auto object-contain max-h-16" />
                 </div>
               )}
-              {data.agency && (
+              {data.agency && data.showAgencyOnCover !== false && (
                 <p className="tracking-[0.2em] font-black text-lg uppercase opacity-90" style={{ color: data.theme.primary }}>
                   {data.agency}
                 </p>

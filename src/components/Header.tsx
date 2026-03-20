@@ -93,22 +93,36 @@ export function Header({
     };
 
     const handlePrint = () => {
-        // 動態注入列印用樣式，確保無邊距滿版輸出
+        // 標準 A5 直式列印
+        document.body.classList.remove('print-cover-mode');
         const printStyle = document.createElement('style');
         printStyle.id = 'force-fullpage-print';
         printStyle.innerHTML = `
             @page { size: A5 portrait; margin: 0 !important; }
-            @media print {
-                html, body { margin: 0 !important; padding: 0 !important; }
-            }
+            @media print { html, body { margin: 0 !important; padding: 0 !important; } }
         `;
         document.head.appendChild(printStyle);
-
         window.print();
-
-        // 列印完成後移除暫時樣式
         setTimeout(() => {
             const el = document.getElementById('force-fullpage-print');
+            if (el) el.remove();
+        }, 1000);
+    };
+
+    const handlePrintCover = () => {
+        // A4 橫式封面+封底跨頁列印
+        document.body.classList.add('print-cover-mode');
+        const printStyle = document.createElement('style');
+        printStyle.id = 'force-spread-print';
+        printStyle.innerHTML = `
+            @page { size: A4 landscape; margin: 0 !important; }
+            @media print { html, body { margin: 0 !important; padding: 0 !important; } }
+        `;
+        document.head.appendChild(printStyle);
+        window.print();
+        setTimeout(() => {
+            document.body.classList.remove('print-cover-mode');
+            const el = document.getElementById('force-spread-print');
             if (el) el.remove();
         }, 1000);
     };
@@ -235,12 +249,24 @@ export function Header({
                 </button>
 
                 <button
+                    onClick={handlePrintCover}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 transition-colors hover:bg-blue-50 text-blue-700"
+                    title="將封面與封底拼成一張 A4 橫式列印"
+                >
+                    <div className="flex -space-x-1">
+                        <Printer size={16} />
+                        <Printer size={16} className="opacity-50" />
+                    </div>
+                    封面跨頁 (A4)
+                </button>
+
+                <button
                     onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-opacity ml-2 hover:opacity-90 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-opacity ml-1 hover:opacity-90 active:scale-95"
                     style={{ backgroundColor: '#1e3a5f' }}
                 >
                     <Printer size={18} />
-                    列印手冊 (PDF)
+                    手冊全文 (PDF)
                 </button>
             </div>
             <StatusLogModal

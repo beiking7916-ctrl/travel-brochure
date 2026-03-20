@@ -41,11 +41,16 @@ export function BackCoverPage() {
                   <span className="text-red-600 font-bold">緊急聯絡：{data.emergencyPhone}</span>
                 </div>
               )}
-              {/* 這裡可以放一些固定的裝飾文字 */}
-              <p className="mt-8 text-xs opacity-60 flex flex-col gap-1">
-                <span>感謝您的參與，祝您旅途愉快</span>
-                <span>Have a Wonderful Trip!</span>
-              </p>
+              {data.backCoverText ? (
+                <div className="mt-8 text-xs opacity-70 whitespace-pre-wrap leading-relaxed max-w-[280px]">
+                  {data.backCoverText}
+                </div>
+              ) : (
+                <p className="mt-8 text-xs opacity-60 flex flex-col gap-1">
+                  <span>感謝您的參與，祝您旅途愉快</span>
+                  <span>Have a Wonderful Trip!</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -157,17 +157,30 @@ body {
     break-after: auto !important;
   }
 
-  /* 跨頁 A4 橫式樣式 */
+  /* 預設隱藏跨頁 A4，除非有特定模式 */
   .a4-landscape-page {
+    display: none !important;
+  }
+
+  /* 當處於封面列印模式時，僅顯示 A4 跨頁，隱藏其餘 A5 頁面 */
+  body.print-cover-mode .a4-landscape-page {
+    display: flex !important;
     width: 297mm !important;
     height: 210mm !important;
-    display: flex !important;
     page-break-after: always !important;
     break-after: page !important;
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
-    overflow: hidden !important;
+  }
+
+  body.print-cover-mode .a5-page {
+    display: none !important;
+  }
+
+  /* 當處於標準手冊模式時，隱藏 A4 跨頁 */
+  body:not(.print-cover-mode) .a4-landscape-page {
+    display: none !important;
   }
 
   /* 跨頁中的 A5 頁面，寬度填滿 50% 並移除邊界 */
