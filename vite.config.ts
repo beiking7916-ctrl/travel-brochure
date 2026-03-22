@@ -6,4 +6,12 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/travel-brochure/',
+  server: {
+    port: 8085,
+    host: true,
+  },
+  preview: {
+    port: 8085,
+    host: true,
+  },
 })
