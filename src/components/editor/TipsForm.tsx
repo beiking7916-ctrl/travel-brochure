@@ -95,7 +95,6 @@ export function TipsForm() {
 
       {/* 經典文字版本 */}
       <div className="space-y-4">
-        <SectionSettings id="tips" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2 gap-2">
           <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
             <AlertCircle size={20} />
@@ -152,13 +151,18 @@ export function TipsForm() {
               return (
                 <div key={key} className="space-y-3 p-4 bg-white border border-gray-200 rounded-xl relative group">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <input
-                      type="text"
-                      value={data.tips.customLabels?.[key] ?? label}
-                      onChange={(e) => updateCustomLabel(key, e.target.value)}
-                      className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0 w-1/2`}
-                      style={{ color: data.theme.primary }}
-                    />
+                    <div className="flex items-center gap-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+                        {index + 1}
+                        </span>
+                        <input
+                        type="text"
+                        value={data.tips.customLabels?.[key] ?? label}
+                        onChange={(e) => updateCustomLabel(key, e.target.value)}
+                        className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0`}
+                        style={{ color: data.theme.primary }}
+                        />
+                    </div>
                     <div className="flex gap-4 items-center">
                       <button
                         onClick={addDestinationSection}
@@ -169,6 +173,7 @@ export function TipsForm() {
                       {headerActions}
                     </div>
                   </div>
+                  <SectionSettings id={key} />
 
                   <RichTextarea
                     themeColor={data.theme.primary}
@@ -221,15 +226,21 @@ export function TipsForm() {
             return (
               <div key={key} className="space-y-3 p-4 bg-white border border-gray-200 rounded-xl relative group">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <input
-                    type="text"
-                    value={data.tips.customLabels?.[key] ?? label}
-                    onChange={(e) => updateCustomLabel(key, e.target.value)}
-                    className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0 w-1/2`}
-                    style={{ color: data.theme.primary }}
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+                      {index + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={data.tips.customLabels?.[key] ?? label}
+                      onChange={(e) => updateCustomLabel(key, e.target.value)}
+                      className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0`}
+                      style={{ color: data.theme.primary }}
+                    />
+                  </div>
                   {headerActions}
                 </div>
+                <SectionSettings id={key} />
                 <RichTextarea
                   themeColor={data.theme.primary}
                   value={data.tips[key as keyof Tips] as string || ''}
@@ -247,7 +258,6 @@ export function TipsForm() {
 
       {/* 9宮格版本 */}
       <div className="space-y-4">
-        <SectionSettings id="gridTips" />
         <h3 className="font-semibold text-lg flex items-center gap-2 mb-2" style={{ color: data.theme.primary }}>
           <Lightbulb size={20} />
           貼心小叮嚀 (九宮格設計)
@@ -270,6 +280,8 @@ export function TipsForm() {
                     placeholder="區塊標題"
                   />
                 </div>
+
+                <SectionSettings id={tip.id} />
 
                 <div className="flex-1 space-y-3 flex flex-col">
                   <TipImageUploader

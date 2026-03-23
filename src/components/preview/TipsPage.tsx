@@ -20,7 +20,7 @@ export function TipsPage() {
       {pages.map((pageItems, pageIdx) => (
         <PageWrapper
           key={`tips-page-${pageIdx}`}
-          sectionId="tips"
+          sectionId={pageItems[0]?.key || 'tips'}
           title="旅遊注意事項"
           icon={<AlertCircle size={24} />}
         >
@@ -32,7 +32,9 @@ export function TipsPage() {
                     <AlertCircle size={16} strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base font-bold mb-1.5 tracking-widest text-gray-800 border-b border-gray-100 pb-1 inline-block">{item.label}</h3>
+                    <h3 className="text-base font-bold mb-1.5 tracking-widest text-gray-800 border-b border-gray-100 pb-1 inline-block">
+                      {item.index}. {item.label}
+                    </h3>
 
                     {item.content && (
                       <p className="dynamic-text text-gray-600 text-justify whitespace-pre-wrap mb-3 font-medium">

@@ -41,7 +41,7 @@ export function ItineraryPage() {
                   {/* 天數徽 badges */}
                   <div className="flex-shrink-0 flex flex-col items-center">
                     <div
-                      className="w-12 h-12 flex flex-col justify-center items-center rounded-lg bg-gray-50 mb-1.5 border border-gray-100 pb-0.5"
+                      className="w-14 flex flex-col items-center rounded-lg bg-gray-50 mb-1.5 border border-gray-100 py-1.5"
                       style={{ color: data.theme.primary }}
                     >
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 leading-none">Day</span>

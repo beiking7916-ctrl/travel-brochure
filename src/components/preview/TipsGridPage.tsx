@@ -25,7 +25,12 @@ export function TipsGridPage() {
         <PageWrapper sectionId="gridTips" title="貼心小叮嚀" icon={<Lightbulb size={24} />}>
             <div className="flex-grow flex flex-col justify-center w-full px-2 py-2">
                 <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
-                    {sortedTips.map((tip) => (
+                    {sortedTips.map((tip) => {
+                        const tipSettings = data.pageSettings?.[tip.id];
+                        const tipFontSize = tipSettings?.fontSize || data.contentFontSize || 14;
+                        const tipImageScale = tipSettings?.imageScale || data.imageHeightScale || 1.0;
+                        
+                        return (
                         <div
                             key={tip.id}
                             className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden flex flex-col relative"
@@ -38,7 +43,13 @@ export function TipsGridPage() {
                             </div>
 
                             <div className="flex-1 p-3 pt-9 flex flex-col items-center">
-                                <div className="h-14 w-14 flex items-center justify-center mb-2">
+                                <div 
+                                    className="flex items-center justify-center mb-2"
+                                    style={{ 
+                                        width: `${56 * tipImageScale}px`, 
+                                        height: `${56 * tipImageScale}px` 
+                                    }}
+                                >
                                     {tip.image ? (
                                         <img
                                             src={tip.image}
@@ -53,13 +64,16 @@ export function TipsGridPage() {
                                 </div>
 
                                 <div className="w-full flex-1 flex flex-col justify-center">
-                                    <p className="dynamic-text leading-relaxed text-gray-700 text-left whitespace-pre-wrap">
+                                    <p 
+                                        className="dynamic-text leading-relaxed text-gray-700 text-left whitespace-pre-wrap"
+                                        style={{ fontSize: `${tipFontSize}px` }}
+                                    >
                                         {parseRichText(tip.content, data.theme.primary)}
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>
         </PageWrapper>

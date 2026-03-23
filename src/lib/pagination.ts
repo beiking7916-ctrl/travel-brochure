@@ -18,6 +18,7 @@ export function getTipsPages(data: BrochureData['tips']): any[][] {
 
     const currentOrder = data.order || Object.keys(CLASSIC_TIPS_LABELS);
 
+    let overallIndex = 1;
     currentOrder.forEach((key) => {
         const defaultLabel = CLASSIC_TIPS_LABELS[key as keyof typeof CLASSIC_TIPS_LABELS];
         if (!defaultLabel) return;
@@ -28,7 +29,13 @@ export function getTipsPages(data: BrochureData['tips']): any[][] {
 
         if (!content && (!sections || sections.length === 0)) return;
 
-        let currentMainItem = { key, label, content: content || '', sections: [] as any[] };
+        let currentMainItem = { 
+            key, 
+            label, 
+            content: content || '', 
+            sections: [] as any[],
+            index: overallIndex++ 
+        };
 
         // 是否使用者勾選強迫換頁
         const forcePageBreak = data.pageBreaks?.[key];
@@ -47,12 +54,24 @@ export function getTipsPages(data: BrochureData['tips']): any[][] {
                 if (sec.pageBreak && currentMainItem.sections.length > 0) {
                     pagesArray.push(currentPageItems);
                     currentPageItems = [];
-                    currentMainItem = { key: `${key}-cont-${sIdx}`, label: `${label} (續)`, content: '', sections: [] };
+                    currentMainItem = { 
+                        key: `${key}-cont-${sIdx}`, 
+                        label: `${label} (續)`, 
+                        content: '', 
+                        sections: [],
+                        index: currentMainItem.index 
+                    };
                     currentPageItems.push(currentMainItem);
                 } else if (sec.pageBreak && currentMainItem.content) {
                     pagesArray.push(currentPageItems);
                     currentPageItems = [];
-                    currentMainItem = { key: `${key}-cont-${sIdx}`, label: `${label} (續)`, content: '', sections: [] };
+                    currentMainItem = { 
+                        key: `${key}-cont-${sIdx}`, 
+                        label: `${label} (續)`, 
+                        content: '', 
+                        sections: [],
+                        index: currentMainItem.index 
+                    };
                     currentPageItems.push(currentMainItem);
                 }
                 currentMainItem.sections.push(sec);

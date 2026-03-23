@@ -17,6 +17,7 @@ export function NotesPage({ totalNotes }: NotesPageProps) {
         <PageWrapper
             title="旅遊隨筆"
             icon={<Edit3 size={24} />}
+            sectionId="notes"
         >
             <div className="flex flex-col h-full mt-2">
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col">
@@ -26,10 +27,10 @@ export function NotesPage({ totalNotes }: NotesPageProps) {
                     </div>
 
                     <div className="flex-1 flex flex-col justify-between pb-4">
-                        {lines.map((line) => (
+                        {Array.from({ length: 20 }, (_, i) => i).map((line) => (
                             <div
                                 key={line}
-                                className="w-full border-b border-gray-200 border-dashed h-10"
+                                className="w-full border-b border-gray-200 border-dashed h-7"
                             />
                         ))}
                     </div>
