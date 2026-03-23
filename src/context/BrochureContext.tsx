@@ -27,6 +27,7 @@ export function BrochureProvider({ children, initialData }: { children: ReactNod
       // Data Migration: 將新欄位補進舊資料中
       const merged = { ...defaults, ...initialData };
       // 確保陣列類型的欄位如果有資料就用舊的，沒資料才用預設
+      // 確保陣列類型的欄位如果有資料就用舊的，沒資料才用預設
       merged.flights = initialData.flights || defaults.flights;
       merged.hotels = initialData.hotels || defaults.hotels;
       merged.hotelDetails = initialData.hotelDetails || defaults.hotelDetails;
@@ -36,6 +37,11 @@ export function BrochureProvider({ children, initialData }: { children: ReactNod
       merged.gridTips = initialData.gridTips || defaults.gridTips;
       merged.roomingList = initialData.roomingList || defaults.roomingList;
       merged.customPages = initialData.customPages || defaults.customPages;
+
+      // 確保基本數值屬性有預設值
+      merged.contentFontSize = initialData.contentFontSize || defaults.contentFontSize;
+      merged.imageHeightScale = initialData.imageHeightScale || defaults.imageHeightScale;
+      merged.fontFamily = initialData.fontFamily || defaults.fontFamily;
 
       // 確保 sectionOrder 包含所有新舊區塊
       const currentOrder = initialData.sectionOrder || defaults.sectionOrder;
