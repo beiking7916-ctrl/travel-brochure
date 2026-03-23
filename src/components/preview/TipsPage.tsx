@@ -20,6 +20,7 @@ export function TipsPage() {
       {pages.map((pageItems, pageIdx) => (
         <PageWrapper
           key={`tips-page-${pageIdx}`}
+          sectionId="tips"
           title="旅遊注意事項"
           icon={<AlertCircle size={24} />}
         >

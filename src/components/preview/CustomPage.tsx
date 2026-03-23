@@ -16,8 +16,9 @@ export function CustomPage() {
             {data.customPages.map((page, index) => (
                 <PageWrapper
                     key={page.id || `custom-page-${index}`}
+                    sectionId={page.id}
                     title={page.title || '自訂頁面'}
-                    icon={<FileText size={24} />}
+                    icon={<FileText size={18} />}
                 >
                     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 overflow-hidden">
 

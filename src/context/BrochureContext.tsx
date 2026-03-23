@@ -16,6 +16,7 @@ interface BrochureContextType {
   setTheme: (theme: ThemeColors | keyof typeof themes) => void;
   addPackingItem: (text: string, important: boolean) => void;
   removePackingItem: (index: number) => void;
+  updatePageSetting: (id: string, updates: { fontSize?: number; imageScale?: number }) => void;
 }
 
 const BrochureContext = createContext<BrochureContextType | undefined>(undefined);
@@ -87,8 +88,21 @@ export function BrochureProvider({ children, initialData }: { children: ReactNod
     }));
   };
 
+  const updatePageSetting = (id: string, updates: { fontSize?: number; imageScale?: number }) => {
+    setData(prev => ({
+      ...prev,
+      pageSettings: {
+        ...(prev.pageSettings || {}),
+        [id]: {
+          ...(prev.pageSettings?.[id] || {}),
+          ...updates
+        }
+      }
+    }));
+  };
+
   return (
-    <BrochureContext.Provider value={{ data, updateData, setTheme, addPackingItem, removePackingItem }}>
+    <BrochureContext.Provider value={{ data, updateData, setTheme, addPackingItem, removePackingItem, updatePageSetting }}>
       {children}
     </BrochureContext.Provider>
   );

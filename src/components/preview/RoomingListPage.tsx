@@ -14,7 +14,7 @@ export function RoomingListPage() {
     const hasHotels = hotels.length > 0;
 
     return (
-        <PageWrapper title="分房表 Rooming List" icon={<Users size={24} />}>
+        <PageWrapper sectionId="roomingList" title="分房表 Rooming List" icon={<Users size={24} />}>
             <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-gray-800">
                 {/* Rooming Table */}
                 <div className="flex-1 overflow-hidden p-2.5">

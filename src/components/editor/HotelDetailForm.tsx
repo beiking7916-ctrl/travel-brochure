@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Building2, ImagePlus, Trash2, Plus } from 'lucide-react';
+import { Building2, Plus, Trash2, Layout, LayoutPanelLeft, List, Image as ImageIcon, ChevronUp, ChevronDown } from 'lucide-react';
+import { SectionSettings } from './SectionSettings';
 import { useDropzone } from 'react-dropzone';
 import { compressImage } from '../../lib/imageUtils';
 
@@ -56,7 +57,8 @@ export function HotelDetailForm() {
     const labelClassName = "block text-xs font-medium text-gray-700 mb-1.5";
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-20">
+            <SectionSettings id="hotelDetail" />
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
                     <Building2 size={20} />
@@ -206,7 +208,7 @@ function ImageUploader({ onUpload }: { onUpload: (file: File) => void }) {
                 }`}
         >
             <input {...getInputProps()} />
-            <ImagePlus size={24} className={isDragActive ? 'text-blue-500' : 'text-gray-400'} />
+            <ImageIcon size={24} className={isDragActive ? 'text-blue-500' : 'text-gray-400'} />
             <span className="text-[10px] text-gray-400 mt-2">點擊、拖曳或 Ctrl+V 貼上</span>
         </div>
     );

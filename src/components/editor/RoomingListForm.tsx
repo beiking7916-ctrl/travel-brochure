@@ -1,7 +1,8 @@
 import React from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Trash2, Users, FileText, ChevronDown, ChevronUp, GripVertical, Settings } from 'lucide-react';
 import type { RoomingEntry } from '../../types';
+import { SectionSettings } from './SectionSettings';
 
 export function RoomingListForm() {
     const { data, updateData } = useBrochure();
@@ -69,7 +70,8 @@ export function RoomingListForm() {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <SectionSettings id="roomingList" />
+            <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-4">
                     <h3 className="text-sm font-bold text-gray-700">分房列表 ({roomingList.length} 間)</h3>
                     <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer hover:text-blue-600 transition-colors">

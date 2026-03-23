@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
 import { Lightbulb, AlertCircle, ImagePlus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { SectionSettings } from './SectionSettings';
 import { useDropzone } from 'react-dropzone';
 import { TipItem, Tips } from '../../types';
 import { compressImage } from '../../lib/imageUtils';
@@ -94,6 +95,7 @@ export function TipsForm() {
 
       {/* 經典文字版本 */}
       <div className="space-y-4">
+        <SectionSettings id="tips" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2 gap-2">
           <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
             <AlertCircle size={20} />
@@ -245,6 +247,7 @@ export function TipsForm() {
 
       {/* 9宮格版本 */}
       <div className="space-y-4">
+        <SectionSettings id="gridTips" />
         <h3 className="font-semibold text-lg flex items-center gap-2 mb-2" style={{ color: data.theme.primary }}>
           <Lightbulb size={20} />
           貼心小叮嚀 (九宮格設計)

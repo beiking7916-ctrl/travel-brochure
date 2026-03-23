@@ -4,6 +4,7 @@ import { Camera, ImagePlus, Trash2, Plus, LayoutPanelTop, Globe, Download, Uploa
 import { useDropzone } from 'react-dropzone';
 import { attractionApi, Country, LibraryAttraction } from '../../lib/attractionApi';
 import { compressImage } from '../../lib/imageUtils';
+import { SectionSettings } from './SectionSettings';
 
 export function AttractionForm() {
     const { data, updateData } = useBrochure();
@@ -182,8 +183,9 @@ export function AttractionForm() {
     const labelClassName = "block text-xs font-medium text-gray-700 mb-1.5";
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6 pb-20">
+            <SectionSettings id="attraction" />
+            <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
                     <Camera size={20} />
                     景點介紹

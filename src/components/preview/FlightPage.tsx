@@ -200,7 +200,7 @@ export function FlightPage() {
 
   if (flights.length === 0) {
     return (
-      <PageWrapper title="航班資訊" icon={<Plane size={24} />}>
+      <PageWrapper sectionId="flight" title="航班資訊" icon={<Plane size={24} />}>
         <div className="flex-grow flex flex-col">
           <div className="flex-grow py-20 text-center opacity-20 italic font-medium">
             暫無航班資訊，請洽旅行社確認。
@@ -212,7 +212,7 @@ export function FlightPage() {
   }
 
   return (
-    <PageWrapper title="航班資訊" icon={<Plane size={18} />}>
+    <PageWrapper sectionId="flight" title="航班資訊" icon={<Plane size={18} />}>
       <div className="flex-grow flex flex-col h-full">
         <div className="space-y-4">
           {groupedFlights.map((group, gIdx) => (

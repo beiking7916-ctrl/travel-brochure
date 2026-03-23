@@ -45,7 +45,7 @@ export function HotelPage() {
   return (
     <>
       {hotelPages.map((pageHotels, pageIdx) => (
-        <PageWrapper key={pageIdx} title={pageIdx === 0 ? "住宿安排" : "住宿安排 (續)"} icon={<Building2 size={24} />}>
+        <PageWrapper key={pageIdx} sectionId="hotel" title={pageIdx === 0 ? "住宿安排" : "住宿安排 (續)"} icon={<Building2 size={24} />}>
           <div className="space-y-6">
             {pageHotels.map((hotel: any) => {
               const index = hotel.originalIndex;

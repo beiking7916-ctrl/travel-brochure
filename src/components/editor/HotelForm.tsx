@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Building2, ImagePlus, Trash2 } from 'lucide-react';
+import { Building2, ImagePlus, Trash2, Plus, Clock, MapPin, Phone } from 'lucide-react';
+import { SectionSettings } from './SectionSettings';
 import { useDropzone } from 'react-dropzone';
 import { compressImage } from '../../lib/imageUtils';
 
@@ -20,22 +21,18 @@ export function HotelForm() {
   };
 
   const removeHotel = (indexToRemove: number) => {
-    // 過濾掉被刪除的飯店
     const newHotels = data.hotels.filter((_, index) => index !== indexToRemove);
-
-    // 同步更新所有行程中綁定的飯店索引 (hotelIndex)
     const newItineraries = data.itineraries.map(day => {
       let newHotelIndex = day.hotelIndex;
       if (newHotelIndex !== null) {
         if (newHotelIndex === indexToRemove) {
-          newHotelIndex = null; // 原本綁定的飯店被刪除了
+          newHotelIndex = null;
         } else if (newHotelIndex > indexToRemove) {
-          newHotelIndex -= 1; // 索引往前補位
+          newHotelIndex -= 1;
         }
       }
       return { ...day, hotelIndex: newHotelIndex };
     });
-
     updateData({
       hotels: newHotels,
       itineraries: newItineraries
@@ -55,7 +52,6 @@ export function HotelForm() {
     if (acceptedFiles[0]) handleImageUpload(index, acceptedFiles[0]);
   }, [handleImageUpload]);
 
-  // 處理從剪貼簿貼上圖片
   const handlePaste = useCallback((index: number, e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -63,7 +59,7 @@ export function HotelForm() {
         const file = items[i].getAsFile();
         if (file) {
           handleImageUpload(index, file);
-          e.preventDefault(); // 防止預設貼上行為
+          e.preventDefault();
           break;
         }
       }
@@ -75,12 +71,12 @@ export function HotelForm() {
     updateHotel(index, 'image', '');
   };
 
-  // 共用的 Input 樣式
   const inputClassName = "w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm text-gray-700";
   const labelClassName = "block text-xs font-medium text-gray-700 mb-1";
 
   return (
     <div className="space-y-4">
+      <SectionSettings id="hotel" />
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
           <Building2 size={20} />
@@ -123,8 +119,6 @@ export function HotelForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
-
-              {/* 左側：飯店圖片上傳 */}
               <div>
                 <label className={labelClassName}>飯店圖片</label>
                 <HotelImageUploader
@@ -136,8 +130,6 @@ export function HotelForm() {
                   onRemove={removeImage}
                 />
               </div>
-
-              {/* 右側：表單輸入 */}
               <div className="space-y-3">
                 <div>
                   <label className={labelClassName}>飯店名稱</label>
@@ -149,7 +141,6 @@ export function HotelForm() {
                     placeholder="例如：大紅花渡假村"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelClassName}>電話</label>
@@ -171,7 +162,6 @@ export function HotelForm() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className={labelClassName}>地址</label>
                   <input
@@ -192,16 +182,13 @@ export function HotelForm() {
                   />
                 </div>
               </div>
-
             </div>
           </div>
         ))}
 
         {data.hotels.length === 0 && (
           <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-            <p className="text-sm text-gray-500 font-medium">
-              目前無需安排住宿
-            </p>
+            <p className="text-sm text-gray-500 font-medium">目前無需安排住宿</p>
           </div>
         )}
 
@@ -239,8 +226,7 @@ function HotelImageUploader({
       {...getRootProps()}
       onPaste={(e) => onPaste(index, e)}
       tabIndex={0}
-      className={`relative border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors h-32 flex flex-col items-center justify-center overflow-hidden outline-none focus:border-blue-300 focus:bg-blue-50/30 ${isDragActive ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:bg-gray-50'
-        }`}
+      className={`relative border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors h-32 flex flex-col items-center justify-center overflow-hidden outline-none focus:border-blue-300 focus:bg-blue-50/30 ${isDragActive ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:bg-gray-50'}`}
     >
       <input {...getInputProps()} />
       {image ? (

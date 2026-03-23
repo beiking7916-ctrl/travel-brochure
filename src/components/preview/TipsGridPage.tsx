@@ -22,7 +22,7 @@ export function TipsGridPage() {
     const sortedTips = data.gridTips; // 保持 9 宮格順序
 
     return (
-        <PageWrapper title="貼心小叮嚀" icon={<Lightbulb size={24} />}>
+        <PageWrapper sectionId="gridTips" title="貼心小叮嚀" icon={<Lightbulb size={24} />}>
             <div className="flex-grow flex flex-col justify-center w-full px-2 py-2">
                 <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
                     {sortedTips.map((tip) => (

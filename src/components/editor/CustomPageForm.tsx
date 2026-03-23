@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Plus, Trash2, FileText, Layout, GripVertical, Image as ImageIcon, ImagePlus } from 'lucide-react';
+import { Layout, ImagePlus, Trash2, Plus, Type, MoreHorizontal, ChevronUp, ChevronDown, Check, FileText, Image as ImageIcon } from 'lucide-react';
+import { SectionSettings } from './SectionSettings';
 import { useDropzone } from 'react-dropzone';
 import { compressImage } from '../../lib/imageUtils';
 
@@ -77,6 +78,7 @@ export function CustomPageForm() {
             <div className="space-y-6">
                 {pages.map((page, index) => (
                     <div key={page.id} className="p-4 bg-gray-50 rounded-xl space-y-4 border border-gray-100 relative group">
+                        <SectionSettings id={page.id} />
                         <button
                             onClick={() => removePage(index)}
                             className="absolute -top-3 -right-3 p-2 bg-white text-red-500 rounded-full shadow-md hover:bg-red-50 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"

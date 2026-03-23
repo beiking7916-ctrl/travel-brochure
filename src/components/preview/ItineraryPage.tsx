@@ -23,7 +23,7 @@ export function ItineraryPage() {
   return (
     <>
       {pages.map((pageDays, pageIdx) => (
-        <PageWrapper key={pageIdx} title={pageIdx === 0 ? "行程規劃" : "行程規劃 (續)"} icon={<MapPin size={18} />}>
+        <PageWrapper key={pageIdx} sectionId="itinerary" title={pageIdx === 0 ? "行程規劃" : "行程規劃 (續)"} icon={<MapPin size={18} />}>
           <div className="space-y-3">
             {pageDays.map((day: any) => {
               const index = day.originalIndex;

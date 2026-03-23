@@ -7,10 +7,16 @@ interface PageWrapperProps {
     icon?: ReactNode;
     hideHeaderFooter?: boolean;
     className?: string;
+    sectionId?: string;
 }
 
-export function PageWrapper({ children, title, icon, hideHeaderFooter = false, className = '' }: PageWrapperProps) {
+export function PageWrapper({ children, title, icon, hideHeaderFooter = false, className = '', sectionId }: PageWrapperProps) {
     const { data } = useBrochure();
+
+    // 取得當前頁面專屬設定，若無則用全域設定
+    const specificSettings = sectionId ? data.pageSettings?.[sectionId] : undefined;
+    const currentFontSize = specificSettings?.fontSize || data.contentFontSize || 14;
+    const currentImageScale = specificSettings?.imageScale || data.imageHeightScale || 1.0;
 
     if (hideHeaderFooter) {
         return (
@@ -19,8 +25,8 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
                 style={{ 
                     backgroundColor: data.theme.secondary, 
                     color: data.theme.text,
-                    '--content-font-size': `${data.contentFontSize || 14}px`,
-                    '--image-height-scale': data.imageHeightScale || 1.0,
+                    '--content-font-size': `${currentFontSize}px`,
+                    '--image-height-scale': currentImageScale,
                     'fontFamily': data.fontFamily || "'Noto Sans TC', sans-serif"
                 } as React.CSSProperties}
             >
@@ -48,8 +54,8 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
             style={{ 
                 backgroundColor: data.theme.secondary, 
                 color: data.theme.text,
-                '--content-font-size': `${data.contentFontSize || 14}px`,
-                '--image-height-scale': data.imageHeightScale || 1.0,
+                '--content-font-size': `${currentFontSize}px`,
+                '--image-height-scale': currentImageScale,
                 'fontFamily': data.fontFamily || "'Noto Sans TC', sans-serif"
             } as React.CSSProperties}
         >

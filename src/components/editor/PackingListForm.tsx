@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { Briefcase, Plus, Trash2, Star } from 'lucide-react';
+import { SectionSettings } from './SectionSettings';
 
 export function PackingListForm() {
   const { data, addPackingItem, removePackingItem } = useBrochure();
@@ -17,10 +18,13 @@ export function PackingListForm() {
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg flex items-center gap-2 mb-2" style={{ color: data.theme.primary }}>
-        <CheckSquare size={20} />
-        旅遊物品一覽
-      </h3>
+      <SectionSettings id="packing" />
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
+          <Briefcase size={20} />
+          行李清單
+        </h3>
+      </div>
 
       <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm space-y-4">
         <div className="flex flex-col gap-3">

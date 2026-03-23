@@ -4,39 +4,25 @@ import { Plane, ImagePlus, Trash2, Plus, ArrowDown, ChevronUp, ChevronDown, Map,
 import { useDropzone } from 'react-dropzone';
 import { FlightInfo } from '../../types';
 import { compressImage } from '../../lib/imageUtils';
+import { SectionSettings } from './SectionSettings';
 
 export function FlightForm() {
   const { data, updateData } = useBrochure();
 
-  // 1. Data Migration: 將舊的物件格式轉為數組格式
   const flights = useMemo(() => {
-    if (Array.isArray(data.flights)) {
-      return data.flights;
-    }
-    // 如果是舊格式 { outbound, return }
-    const oldFlights = data.flights as any;
-    if (oldFlights.outbound || oldFlights.return) {
-      return [
-        { ...oldFlights.outbound, arrivalNextDay: false },
-        { ...oldFlights.return, arrivalNextDay: false }
-      ].filter(f => f.airline || f.flightNumber || f.departurePlace);
-    }
+    if (Array.isArray(data.flights)) return data.flights;
     return [];
   }, [data.flights]);
-
-  const updateFlights = (newFlights: FlightInfo[]) => {
-    updateData({ flights: newFlights });
-  };
 
   const updateSegment = (index: number, field: keyof FlightInfo, value: any) => {
     const newFlights = [...flights];
     newFlights[index] = { ...newFlights[index], [field]: value };
-    updateFlights(newFlights);
+    updateData({ flights: newFlights });
   };
 
   const addSegment = () => {
     if (flights.length >= 4) return;
-    const newFlights = [...flights, {
+    const newSegment: FlightInfo = {
       airline: '',
       airlineLogo: '',
       flightNumber: '',
@@ -47,53 +33,49 @@ export function FlightForm() {
       arrivalPlace: '',
       arrivalNextDay: false,
       duration: '',
-      flightDuration: '',
-      type: 'outbound',
-    }];
-    updateFlights(newFlights);
+      type: flights.length === 0 ? 'outbound' : (flights.length === 1 ? 'return' : 'middle'),
+    };
+    updateData({ flights: [...flights, newSegment] });
   };
 
   const removeSegment = (index: number) => {
     const newFlights = flights.filter((_, i) => i !== index);
-    updateFlights(newFlights);
+    updateData({ flights: newFlights });
   };
 
   const moveSegment = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === flights.length - 1) return;
     const newFlights = [...flights];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= flights.length) return;
-
     [newFlights[index], newFlights[targetIndex]] = [newFlights[targetIndex], newFlights[index]];
-    updateFlights(newFlights);
+    updateData({ flights: newFlights });
   };
 
-  const handleImageUpload = async (index: number, file: File) => {
+  const handleLogoUpload = async (index: number, file: File) => {
     try {
-      const compressedImage = await compressImage(file);
-      updateSegment(index, 'airlineLogo', compressedImage);
-    } catch (error) {
-      console.error('飛機 logo 壓縮失敗', error);
+      const compressed = await compressImage(file);
+      updateSegment(index, 'airlineLogo', compressed);
+    } catch (err) {
+      console.error('Logo 壓縮失敗', err);
     }
   };
+
   const handleMapUpload = async (file: File) => {
     try {
-      const compressedImage = await compressImage(file);
-      updateData({ meetingMap: compressedImage });
-    } catch (error) {
-      console.error('地圖圖片壓縮失敗', error);
+      const compressed = await compressImage(file);
+      updateData({ meetingMap: compressed });
+    } catch (err) {
+      console.error('地圖壓縮失敗', err);
     }
   };
 
-  const { getRootProps: getMapProps, getInputProps: getMapInputProps, isDragActive: isMapDragActive } = useDropzone({
-    onDrop: (files) => files[0] && handleMapUpload(files[0]),
-    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
-    maxFiles: 1,
-  });
-  const inputClassName = "w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm text-gray-700";
-  const labelClassName = "block text-xs font-medium text-gray-700 mb-1.5";
+  const labelClassName = "block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider";
+  const inputClassName = "w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm text-gray-700 placeholder:text-gray-300";
 
   return (
     <div className="space-y-4">
+      <SectionSettings id="flight" />
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
           <Plane size={20} />
@@ -113,121 +95,204 @@ export function FlightForm() {
         {flights.map((flight, index) => (
           <SegmentEditor
             key={index}
-            index={index}
             flight={flight}
+            index={index}
             total={flights.length}
             updateSegment={updateSegment}
             removeSegment={removeSegment}
             moveSegment={moveSegment}
-            handleImageUpload={handleImageUpload}
-            inputClassName={inputClassName}
+            handleLogoUpload={handleLogoUpload}
             labelClassName={labelClassName}
-            themeColor={data.theme.primary}
+            inputClassName={inputClassName}
+            primaryColor={data.theme.primary}
           />
         ))}
 
         {flights.length === 0 && (
-          <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-            <Plane size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500">尚無航班資訊，請點擊「新增航段」</p>
+          <div className="py-12 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+            <Plane className="mx-auto text-gray-300 mb-3" size={32} strokeWidth={1.5} />
+            <p className="text-sm text-gray-400 font-medium">尚未新增任何航段</p>
+            <button onClick={addSegment} className="mt-4 text-blue-600 font-bold text-xs hover:underline decoration-2 underline-offset-4">立即新增第一筆 ➔</button>
           </div>
         )}
+
+        <div className="pt-6 border-t border-gray-100">
+          <h4 className="font-bold text-sm text-gray-800 mb-4 flex items-center gap-2">
+            <Map size={16} className="text-blue-500" />
+            機場集合資訊
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className={labelClassName}>集合地點</label>
+              <input
+                type="text"
+                value={data.meetingPoint || ''}
+                onChange={(e) => updateData({ meetingPoint: e.target.value })}
+                className={inputClassName}
+                placeholder="例如：桃園機場第一航廈 3F 華航櫃檯"
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>集合時間</label>
+              <input
+                type="text"
+                value={data.meetingTime || ''}
+                onChange={(e) => updateData({ meetingTime: e.target.value })}
+                className={inputClassName}
+                placeholder="例如：10:30"
+              />
+            </div>
+          </div>
+
+          <label className={labelClassName}>集合地點地圖</label>
+          <MapUploader
+            image={data.meetingMap}
+            onUpload={handleMapUpload}
+            onRemove={() => updateData({ meetingMap: '' })}
+            primaryColor={data.theme.primary}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SegmentEditor({
+  flight, index, total, updateSegment, removeSegment, moveSegment, handleLogoUpload, labelClassName, inputClassName, primaryColor
+}: any) {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles[0]) handleLogoUpload(index, acceptedFiles[0]);
+  }, [index, handleLogoUpload]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
+    maxFiles: 1,
+  });
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group">
+      <div className="px-5 py-3 bg-gray-50/80 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-200 text-blue-600 text-xs font-black shadow-sm">
+            {index + 1}
+          </span>
+          <select
+            value={flight.type}
+            onChange={(e) => updateSegment(index, 'type', e.target.value)}
+            className="bg-transparent font-bold text-sm text-gray-700 outline-none cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            <option value="outbound">去程航班</option>
+            <option value="middle">中轉航班</option>
+            <option value="return">回程航班</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => moveSegment(index, 'up')} disabled={index === 0} className="p-1.5 text-gray-400 hover:text-blue-500 disabled:opacity-20 hover:bg-white rounded-lg transition-all"><ChevronUp size={16} /></button>
+          <button onClick={() => moveSegment(index, 'down')} disabled={index === total - 1} className="p-1.5 text-gray-400 hover:text-blue-500 disabled:opacity-20 hover:bg-white rounded-lg transition-all"><ChevronDown size={16} /></button>
+          <button onClick={() => removeSegment(index)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1"><Trash2 size={16} /></button>
+        </div>
       </div>
 
-      {/* 集合與緊急聯絡資訊 */}
-      <div className="mt-10 pt-8 border-t border-gray-200">
-        <h3 className="font-semibold text-lg flex items-center gap-2 mb-4" style={{ color: data.theme.primary }}>
-          <Map size={20} />
-          集合地點地圖 & 緊急聯絡人
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50/50 border border-gray-200 rounded-2xl">
-          <div className="space-y-4">
-            <label className={labelClassName}>機場集合地點地圖</label>
+      <div className="p-5 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-6">
+          <div className="space-y-2">
+            <label className={labelClassName}>航空公司 Logo</label>
             <div
-              {...getMapProps()}
-              onPaste={(e) => {
-                const items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                  if (items[i].type.startsWith('image/')) {
-                    const file = items[i].getAsFile();
-                    if (file) { handleMapUpload(file); e.preventDefault(); break; }
-                  }
-                }
-              }}
-              className={`relative border-2 border-dashed rounded-xl text-center cursor-pointer transition-all h-64 flex flex-col items-center justify-center overflow-hidden outline-none ${isMapDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-white'}`}
+              {...getRootProps()}
+              className={`relative h-20 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
             >
-              <input {...getMapInputProps()} />
-              {data.meetingMap ? (
-                <>
-                  <img src={data.meetingMap} alt="Meeting Map" className="absolute inset-0 w-full h-full object-contain p-2 bg-white" />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); updateData({ meetingMap: '' }); }}
-                    className="absolute top-2 right-2 bg-white/90 text-red-500 rounded-full p-2 shadow-sm hover:bg-red-50 z-10"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </>
+              <input {...getInputProps()} />
+              {flight.airlineLogo ? (
+                <img src={flight.airlineLogo} alt="Logo" className="w-full h-full object-contain p-2" />
               ) : (
-                <div className="text-gray-400 flex flex-col items-center gap-2">
-                  <ImagePlus size={32} />
-                  <p className="text-sm font-medium">點擊或拖放上傳機場地圖</p>
-                  <p className="text-xs">支持 JPG, PNG, WebP</p>
-                </div>
+                <ImagePlus className="text-gray-300" size={20} />
               )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClassName}>旅行社名稱</label>
-                <input
-                  type="text"
-                  value={data.agencyName || ''}
-                  onChange={(e) => updateData({ agencyName: e.target.value })}
-                  className={inputClassName}
-                  placeholder="例如：安天旅行社"
-                />
-              </div>
-              <div>
-                <label className={labelClassName}>聯絡人姓名</label>
-                <input
-                  type="text"
-                  value={data.emergencyContactName || ''}
-                  onChange={(e) => updateData({ emergencyContactName: e.target.value })}
-                  className={inputClassName}
-                  placeholder="例如：林經理"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClassName}>航空公司名稱</label>
+              <input
+                type="text"
+                value={flight.airline || ''}
+                onChange={(e) => updateSegment(index, 'airline', e.target.value)}
+                className={inputClassName}
+                placeholder="例如：中華航空"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClassName}>公司市話</label>
-                <input
-                  type="text"
-                  value={data.agencyPhone || ''}
-                  onChange={(e) => updateData({ agencyPhone: e.target.value })}
-                  className={inputClassName}
-                  placeholder="02-1234-5678"
-                />
-              </div>
-              <div>
-                <label className={labelClassName}>緊急手機</label>
-                <input
-                  type="text"
-                  value={data.agencyMobile || ''}
-                  onChange={(e) => updateData({ agencyMobile: e.target.value })}
-                  className={inputClassName}
-                  placeholder="0912-345-678"
-                />
-              </div>
+            <div>
+              <label className={labelClassName}>航班號碼</label>
+              <input
+                type="text"
+                value={flight.flightNumber || ''}
+                onChange={(e) => updateSegment(index, 'flightNumber', e.target.value)}
+                className={inputClassName}
+                placeholder="例如：CI 751"
+              />
             </div>
-            <div className="mt-4 p-4 bg-blue-50/50 rounded-xl">
-              <p className="text-xs text-blue-600 leading-relaxed italic">
-                提示：集合地圖與聯絡資訊將會顯示在航班資訊頁面的下方供旅客參考。
-              </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+          <div>
+            <label className={labelClassName}>出發日期</label>
+            <input
+              type="date"
+              value={flight.date || ''}
+              onChange={(e) => updateSegment(index, 'date', e.target.value)}
+              className={inputClassName}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className={labelClassName}>隔日抵達</label>
+            <div className="flex items-center h-[38px]">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={flight.arrivalNextDay || false}
+                  onChange={(e) => updateSegment(index, 'arrivalNextDay', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-2 text-xs font-semibold text-gray-500 uppercase tracking-tighter">YES</span>
+              </label>
             </div>
+          </div>
+          <div>
+              <label className={labelClassName}>去程資訊</label>
+              <input
+                type="text"
+                value={flight.departurePlace || ''}
+                onChange={(e) => updateSegment(index, 'departurePlace', e.target.value)}
+                className={inputClassName}
+                placeholder="點：桃園 (TPE)"
+              />
+              <input
+                type="text"
+                value={flight.departureTime || ''}
+                onChange={(e) => updateSegment(index, 'departureTime', e.target.value)}
+                className={`${inputClassName} mt-2`}
+                placeholder="時：08:00"
+              />
+          </div>
+          <div>
+              <label className={labelClassName}>抵達資訊</label>
+              <input
+                type="text"
+                value={flight.arrivalPlace || ''}
+                onChange={(e) => updateSegment(index, 'arrivalPlace', e.target.value)}
+                className={inputClassName}
+                placeholder="點：新加坡 (SIN)"
+              />
+              <input
+                type="text"
+                value={flight.arrivalTime || ''}
+                onChange={(e) => updateSegment(index, 'arrivalTime', e.target.value)}
+                className={`${inputClassName} mt-2`}
+                placeholder="時：12:30"
+              />
           </div>
         </div>
       </div>
@@ -235,35 +300,10 @@ export function FlightForm() {
   );
 }
 
-interface SegmentEditorProps {
-  index: number;
-  flight: FlightInfo;
-  total: number;
-  updateSegment: (index: number, field: keyof FlightInfo, value: any) => void;
-  removeSegment: (index: number) => void;
-  moveSegment: (index: number, direction: 'up' | 'down') => void;
-  handleImageUpload: (index: number, file: File) => void;
-  inputClassName: string;
-  labelClassName: string;
-  themeColor: string;
-}
-
-function SegmentEditor({
-  index,
-  flight,
-  total,
-  updateSegment,
-  removeSegment,
-  moveSegment,
-  handleImageUpload,
-  inputClassName,
-  labelClassName,
-  themeColor
-}: SegmentEditorProps) {
-
+function MapUploader({ image, onUpload, onRemove, primaryColor }: any) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles[0]) handleImageUpload(index, acceptedFiles[0]);
-  }, [handleImageUpload, index]);
+    if (acceptedFiles[0]) onUpload(acceptedFiles[0]);
+  }, [onUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -272,212 +312,38 @@ function SegmentEditor({
   });
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image/') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          handleImageUpload(index, file);
-          e.preventDefault();
-          break;
-        }
-      }
+    const item = e.clipboardData.items[0];
+    if (item?.type.includes('image')) {
+      const file = item.getAsFile();
+      if (file) onUpload(file);
     }
   };
 
   return (
-    <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm relative group">
-      {/* 標題與操作選單 */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 font-bold text-sm">
-            {index + 1}
-          </span>
-          <select
-            value={flight.type || 'outbound'}
-            onChange={(e) => updateSegment(index, 'type', e.target.value)}
-            className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer border-b border-transparent hover:border-gray-300 transition-colors py-0.5"
-            style={{ appearance: 'none' }}
-          >
-            <option value="outbound">去程航段</option>
-            <option value="middle">中轉伺候 / 國內線</option>
-            <option value="return">回程航段</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => moveSegment(index, 'up')}
-            disabled={index === 0}
-            className="p-1.5 text-gray-400 hover:text-blue-600 disabled:opacity-30"
-            title="上移"
-          >
-            <ChevronUp size={18} />
-          </button>
-          <button
-            onClick={() => moveSegment(index, 'down')}
-            disabled={index === total - 1}
-            className="p-1.5 text-gray-400 hover:text-blue-600 disabled:opacity-30"
-            title="下移"
-          >
-            <ChevronDown size={18} />
-          </button>
-          <button
-            onClick={() => removeSegment(index)}
-            className="p-1.5 text-red-400 hover:text-red-600 ml-2"
-            title="刪除航段"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-[110px_1fr] gap-6">
-        {/* Logo 上傳 */}
-        <div className="space-y-2">
-          <label className={labelClassName}>航空 Logo</label>
-          <div
-            {...getRootProps()}
-            onPaste={handlePaste}
-            className={`relative border-2 border-dashed rounded-xl text-center cursor-pointer transition-all h-28 flex flex-col items-center justify-center overflow-hidden outline-none ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}`}
-          >
-            <input {...getInputProps()} />
-            {flight.airlineLogo ? (
-              <>
-                <img src={flight.airlineLogo} alt="Logo" className="absolute inset-0 w-full h-full object-contain p-2 bg-white" />
-                <button
-                  onClick={(e) => { e.stopPropagation(); updateSegment(index, 'airlineLogo', ''); }}
-                  className="absolute top-1 right-1 bg-white/90 text-red-500 rounded-full p-1.5 shadow-sm hover:bg-red-50 z-10"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </>
-            ) : (
-              <div className="text-gray-400 flex flex-col items-center gap-1.5">
-                <ImagePlus size={20} />
-                <p className="text-[10px] leading-tight font-medium">貼上圖檔</p>
-              </div>
-            )}
+    <div
+      {...getRootProps()}
+      onPaste={handlePaste}
+      className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all min-h-[200px] flex flex-col items-center justify-center overflow-hidden outline-none ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+    >
+      <input {...getInputProps()} />
+      {image ? (
+        <>
+          <img src={image} alt="Meeting Map" className="absolute inset-0 w-full h-full object-contain p-4" />
+          <div className="absolute inset-0 bg-black/0 hover:bg-black/5 transition-all flex items-start justify-end p-4">
+             <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="bg-red-500 text-white rounded-full p-2 shadow-lg hover:bg-red-600 transition-colors"><Trash2 size={16} /></button>
           </div>
-        </div>
-
-        {/* 航班詳細內容 */}
+        </>
+      ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <label className={labelClassName}>日期</label>
-              <input
-                type="date"
-                value={flight.date || ''}
-                onChange={(e) => updateSegment(index, 'date', e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>航空公司</label>
-              <input
-                type="text"
-                value={flight.airline}
-                onChange={(e) => updateSegment(index, 'airline', e.target.value)}
-                className={inputClassName}
-                placeholder="例如：長榮航空"
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>班機號碼</label>
-              <input
-                type="text"
-                value={flight.flightNumber}
-                onChange={(e) => updateSegment(index, 'flightNumber', e.target.value)}
-                className={`${inputClassName} font-bold tracking-wider uppercase`}
-                placeholder="BR123"
-              />
-            </div>
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+            <ImagePlus className="text-blue-500" size={24} />
           </div>
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-2 border-t border-gray-100">
-            {/* 起飛端 */}
-            <div className="space-y-3">
-              <div>
-                <label className={labelClassName}>起飛地點</label>
-                <input
-                  type="text"
-                  value={flight.departurePlace}
-                  onChange={(e) => updateSegment(index, 'departurePlace', e.target.value)}
-                  className={inputClassName}
-                  placeholder="例如：桃園 T2"
-                />
-              </div>
-              <div>
-                <label className={labelClassName}>起飛時間</label>
-                <input
-                  type="time"
-                  value={flight.departureTime}
-                  onChange={(e) => updateSegment(index, 'departureTime', e.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-            </div>
-
-            {/* 抵達端 */}
-            <div className="space-y-3">
-              <div>
-                <label className={labelClassName}>抵達地點</label>
-                <input
-                  type="text"
-                  value={flight.arrivalPlace}
-                  onChange={(e) => updateSegment(index, 'arrivalPlace', e.target.value)}
-                  className={inputClassName}
-                  placeholder="例如：成田 T1"
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className={labelClassName}>抵達時間</label>
-                  <label className="flex items-center gap-1.5 cursor-pointer group/cb">
-                    <input
-                      type="checkbox"
-                      checked={flight.arrivalNextDay || false}
-                      onChange={(e) => updateSegment(index, 'arrivalNextDay', e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-[10px] font-bold text-orange-600">+1 天抵達</span>
-                  </label>
-                </div>
-                <input
-                  type="time"
-                  value={flight.arrivalTime}
-                  onChange={(e) => updateSegment(index, 'arrivalTime', e.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className={labelClassName}>總飛行時間 (Flight Duration)</label>
-              <input
-                type="text"
-                value={flight.flightDuration || ''}
-                onChange={(e) => updateSegment(index, 'flightDuration', e.target.value)}
-                className={inputClassName}
-                placeholder="例如：12h 30m"
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>備註 (可選填)</label>
-              <input
-                type="text"
-                value={flight.duration || ''}
-                onChange={(e) => updateSegment(index, 'duration', e.target.value)}
-                className={inputClassName}
-                placeholder="例如：空中直飛"
-              />
-            </div>
+          <div>
+            <p className="text-sm font-bold text-gray-700">拖曳或點擊上傳集合地圖</p>
+            <p className="text-xs text-gray-400 mt-1">也可以直接使用 <kbd className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Ctrl+V</kbd> 貼上圖片</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

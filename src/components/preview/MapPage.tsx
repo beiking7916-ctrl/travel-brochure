@@ -10,7 +10,7 @@ export function MapPage() {
     const fitMode = data.mapPage.fit ?? 'cover';
 
     return (
-        <PageWrapper title="旅遊地圖" icon={<Map size={24} />}>
+        <PageWrapper sectionId="map" title="旅遊地圖" icon={<Map size={24} />}>
             <div className="flex-1 relative w-full mt-2">
                 <div
                     className="absolute inset-0 bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-gray-100 p-2 overflow-hidden"

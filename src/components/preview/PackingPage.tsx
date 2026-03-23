@@ -57,7 +57,7 @@ export function PackingPage() {
   );
 
   return (
-    <PageWrapper title="旅遊物品核對表" icon={<CheckSquare size={24} />}>
+    <PageWrapper sectionId="packing" title="旅遊物品核對表" icon={<CheckSquare size={24} />}>
       <div className="flex flex-col h-full py-0">
         {/* 頂部標語 */}
         <div className="border-b-2 border-gray-900 mb-1 pb-0">

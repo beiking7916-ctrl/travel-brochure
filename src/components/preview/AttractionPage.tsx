@@ -76,6 +76,7 @@ export function AttractionPage() {
             {attractionPages.map((pageAttractions, pageIdx) => (
                 <PageWrapper
                     key={pageIdx}
+                    sectionId="attraction"
                     title={pageIdx === 0 ? "景點介紹" : ""}
                     icon={pageIdx === 0 ? <Camera size={24} /> : undefined}
                 >
