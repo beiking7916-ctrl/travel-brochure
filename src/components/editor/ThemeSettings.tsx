@@ -87,6 +87,88 @@ export function ThemeSettings() {
             ))}
           </div>
         </div>
+        {/* 字體選擇 */}
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <h4 className="text-sm font-medium text-gray-700">內容字體設定</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: '思源黑體', value: "'Noto Sans TC', sans-serif" },
+              { label: '思源宋體', value: "'Noto Serif TC', serif" },
+              { label: '微軟正黑體', value: "'Microsoft JhengHei', sans-serif" },
+              { label: '楷體風格', value: "'Kaiti TC', 'STKaiti', 'KaiTi', serif" },
+            ].map((font) => {
+              const isActive = (data.fontFamily || "'Noto Sans TC', sans-serif") === font.value;
+              return (
+                <button
+                  key={font.value}
+                  onClick={() => updateData({ fontFamily: font.value })}
+                  className={`px-3 py-2 text-xs rounded-lg border-2 transition-all text-center ${isActive
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold'
+                      : 'border-gray-100 hover:border-blue-200 text-gray-600'
+                    }`}
+                  style={{ fontFamily: font.value }}
+                >
+                  {font.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 字體大小設定 */}
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700">內容字體大小</h4>
+            <span className="text-sm font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md border border-blue-100 italic font-mono">
+              {data.contentFontSize || 14} px
+            </span>
+          </div>
+
+          <div className="px-1 py-1 text-gray-400">
+            <input
+              type="range"
+              min="10"
+              max="24"
+              step="1"
+              value={data.contentFontSize || 14}
+              onChange={(e) => updateData({ contentFontSize: parseInt(e.target.value) })}
+              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <div className="flex justify-between mt-2 text-[10px] font-bold uppercase tracking-widest px-1">
+              <span>極小 (10px)</span>
+              <span>建議 (14px)</span>
+              <span>極大 (24px)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 圖片高度調整 */}
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700">圖片顯示高度 (縮放比例)</h4>
+            <span className="text-sm font-bold bg-green-50 text-green-600 px-2.5 py-1 rounded-md border border-green-100 italic font-mono">
+              {Math.round((data.imageHeightScale || 1.0) * 100)} %
+            </span>
+          </div>
+
+          <div className="px-1 py-1 text-gray-400">
+            <input
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.05"
+              value={data.imageHeightScale || 1.0}
+              onChange={(e) => updateData({ imageHeightScale: parseFloat(e.target.value) })}
+              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+            />
+            <div className="flex justify-between mt-2 text-[10px] font-bold uppercase tracking-widest px-1">
+              <span>極小 (50%)</span>
+              <span>適中 (100%)</span>
+              <span>極大 (150%)</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

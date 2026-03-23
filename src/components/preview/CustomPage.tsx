@@ -24,23 +24,23 @@ export function CustomPage() {
                         {/* 根據不同版面呈現圖片 */}
                         <div className="mb-4">
                             {page.layout === 'single' && page.images[0] && (
-                                <div className="w-full h-48 rounded-xl overflow-hidden relative shadow-sm">
+                                <div className="w-full dynamic-img-h-48 rounded-xl overflow-hidden relative shadow-sm">
                                     <img src={page.images[0]} alt="Feature" className="absolute inset-0 w-full h-full object-cover" />
                                 </div>
                             )}
 
                             {page.layout === 'top-1-bottom-2' && page.images.length >= 1 && (
                                 <div className="space-y-2">
-                                    <div className="w-full h-32 rounded-xl overflow-hidden relative shadow-sm">
+                                    <div className="w-full dynamic-img-h-32 rounded-xl overflow-hidden relative shadow-sm">
                                         <img src={page.images[0]} alt="Feature 1" className="absolute inset-0 w-full h-full object-cover" />
                                     </div>
                                     {page.images.length > 1 && (
                                         <div className="grid grid-cols-2 gap-2">
-                                            <div className="h-24 rounded-xl overflow-hidden relative shadow-sm">
+                                            <div className="dynamic-img-h-24 rounded-xl overflow-hidden relative shadow-sm">
                                                 <img src={page.images[1]} alt="Feature 2" className="absolute inset-0 w-full h-full object-cover" />
                                             </div>
                                             {page.images[2] && (
-                                                <div className="h-24 rounded-xl overflow-hidden relative shadow-sm">
+                                                <div className="dynamic-img-h-24 rounded-xl overflow-hidden relative shadow-sm">
                                                     <img src={page.images[2]} alt="Feature 3" className="absolute inset-0 w-full h-full object-cover" />
                                                 </div>
                                             )}
@@ -52,7 +52,7 @@ export function CustomPage() {
                             {page.layout === 'grid-4' && page.images.length > 0 && (
                                 <div className="grid grid-cols-2 gap-2">
                                     {page.images.slice(0, 4).map((img, i) => (
-                                        <div key={i} className="h-24 rounded-xl overflow-hidden relative shadow-sm">
+                                        <div key={i} className="dynamic-img-h-24 rounded-xl overflow-hidden relative shadow-sm">
                                             <img src={img} alt={`Feature ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" />
                                         </div>
                                     ))}
@@ -62,7 +62,7 @@ export function CustomPage() {
 
                         {/* 自訂內文 */}
                         <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                            <div className="text-[11px] leading-relaxed text-gray-700 whitespace-pre-wrap text-justify">
+                            <div className="dynamic-text text-gray-700 whitespace-pre-wrap text-justify">
                                 {parseRichText(page.content || '', data.theme.primary)}
                             </div>
                         </div>

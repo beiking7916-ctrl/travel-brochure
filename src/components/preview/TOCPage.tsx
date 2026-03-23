@@ -130,12 +130,12 @@ export function TOCPage() {
             {(data.tocText || data.tocImage) && (
                 <div className="mt-0 mb-4 px-4 space-y-4">
                     {data.tocImage && (
-                        <div className="w-full h-32 overflow-hidden rounded-xl shadow-sm border border-gray-100">
+                        <div className="w-full dynamic-img-h-32 overflow-hidden rounded-xl shadow-sm border border-gray-100">
                             <img src={data.tocImage} alt="Welcome" className="w-full h-full object-cover" />
                         </div>
                     )}
                     {data.tocText && (
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-xs">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap dynamic-text">
                             {data.tocText}
                         </p>
                     )}

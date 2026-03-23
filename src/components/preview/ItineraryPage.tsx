@@ -84,7 +84,7 @@ export function ItineraryPage() {
                           'grid-cols-3'
                         }`}>
                         {day.images.map((img: string, imgIndex: number) => (
-                          <div key={imgIndex} className="relative pt-[50%]">
+                          <div key={imgIndex} className="relative dynamic-img-aspect">
                             <img
                               src={img}
                               alt={`Day ${index + 1}`}
@@ -97,7 +97,7 @@ export function ItineraryPage() {
 
                     {/* 行程描述 */}
                     {day.description && (
-                      <p className="text-[11px] leading-snug text-gray-700 whitespace-pre-wrap">
+                      <p className="dynamic-text text-gray-700 whitespace-pre-wrap">
                         {day.description}
                       </p>
                     )}
@@ -108,7 +108,7 @@ export function ItineraryPage() {
                         <h4 className="text-[11px] font-bold mb-1 flex items-center gap-1.5" style={{ color: data.theme.primary }}>
                           <MapPin size={12} /> 景點特色
                         </h4>
-                        <p className="text-[11px] leading-snug text-gray-700 whitespace-pre-wrap">
+                        <p className="dynamic-text text-gray-700 whitespace-pre-wrap">
                           {day.attractions}
                         </p>
                       </div>

@@ -11,6 +11,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
+    const [isCreating, setIsCreating] = useState(false);
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
 
     const loadList = async () => {
@@ -24,8 +25,15 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
     }, []);
 
     const handleCreate = async () => {
-        const newId = await storage.createBrochure();
-        onSelectBrochure(newId);
+        if (isCreating) return;
+        setIsCreating(true);
+        try {
+            const newId = await storage.createBrochure();
+            onSelectBrochure(newId);
+        } catch (error) {
+            console.error('Failed to create brochure:', error);
+            setIsCreating(false);
+        }
     };
 
     const handleDuplicate = async (e: React.MouseEvent, id: string) => {
@@ -102,10 +110,15 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
                     <div className="w-px h-6 bg-gray-300 mx-2"></div>
                     <button
                         onClick={handleCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                        disabled={isCreating}
+                        className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors shadow-sm ${
+                            isCreating 
+                            ? 'bg-blue-300 cursor-not-allowed text-white' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
                     >
                         <Plus size={18} />
-                        建立新草稿
+                        {isCreating ? '建立中...' : '新增手冊'}
                     </button>
                 </div>
             </header>
@@ -119,10 +132,15 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
                             <p className="text-gray-500 mb-6">點擊下方按鈕開始製作您的第一本旅遊手冊，所有變更將隨螢幕停頓 20 秒自動儲存。</p>
                             <button
                                 onClick={handleCreate}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                                disabled={isCreating}
+                                className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors shadow-sm ${
+                                    isCreating 
+                                    ? 'bg-blue-300 cursor-not-allowed text-white' 
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
                             >
                                 <Plus size={20} />
-                                立即建立
+                                {isCreating ? '處理中...' : '新增手冊'}
                             </button>
                         </div>
                     ) : (

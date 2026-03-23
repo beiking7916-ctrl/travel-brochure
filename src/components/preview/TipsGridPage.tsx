@@ -53,7 +53,7 @@ export function TipsGridPage() {
                                 </div>
 
                                 <div className="w-full flex-1 flex flex-col justify-center">
-                                    <p className="text-[9px] leading-relaxed text-gray-700 text-left whitespace-pre-wrap">
+                                    <p className="dynamic-text leading-relaxed text-gray-700 text-left whitespace-pre-wrap">
                                         {parseRichText(tip.content, data.theme.primary)}
                                     </p>
                                 </div>

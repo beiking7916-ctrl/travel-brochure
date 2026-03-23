@@ -34,7 +34,7 @@ export function TipsPage() {
                     <h3 className="text-base font-bold mb-1.5 tracking-widest text-gray-800 border-b border-gray-100 pb-1 inline-block">{item.label}</h3>
 
                     {item.content && (
-                      <p className="text-xs text-gray-600 leading-relaxed text-justify whitespace-pre-wrap mb-3 font-medium">
+                      <p className="dynamic-text text-gray-600 text-justify whitespace-pre-wrap mb-3 font-medium">
                         {parseRichText(item.content, data.theme.primary)}
                       </p>
                     )}
@@ -47,7 +47,7 @@ export function TipsPage() {
                               <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                               {section.title}
                             </h4>
-                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">
+                            <p className="dynamic-text text-gray-600 whitespace-pre-wrap">
                               {parseRichText(section.content, data.theme.primary)}
                             </p>
                           </div>

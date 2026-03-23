@@ -34,7 +34,7 @@ export function NotesPage({ totalNotes }: NotesPageProps) {
                         ))}
                     </div>
 
-                    <div className="mt-4 text-[8px] font-bold text-gray-300 uppercase tracking-[0.3em] text-center">
+                    <div className="mt-4 dynamic-text font-bold text-gray-300 uppercase tracking-[0.3em] text-center">
                         Capture your memories here
                     </div>
                 </div>

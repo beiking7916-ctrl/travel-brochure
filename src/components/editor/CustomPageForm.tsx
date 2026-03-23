@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Plus, Trash2, FileText, Layout, GripVertical, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, FileText, Layout, GripVertical, Image as ImageIcon, ImagePlus } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import { compressImage } from '../../lib/imageUtils';
 
 export function CustomPageForm() {
     const { data, updateData } = useBrochure();
@@ -33,11 +35,15 @@ export function CustomPageForm() {
         updateData({ customPages: newPages });
     };
 
-    // 簡單的圖片處理（這部分建議如果需要多張可以串接 ImageUploader)
-    const addImage = (index: number) => {
-        const newPages = [...pages];
-        newPages[index].images.push('');
-        updateData({ customPages: newPages });
+    const handleImageUpload = async (pageIndex: number, file: File) => {
+        try {
+            const compressedImage = await compressImage(file);
+            const newPages = [...pages];
+            newPages[pageIndex].images.push(compressedImage);
+            updateData({ customPages: newPages });
+        } catch (error) {
+            console.error('自訂頁面圖片壓縮失敗', error);
+        }
     };
 
     const updateImage = (pageIndex: number, imgIndex: number, val: string) => {
@@ -78,7 +84,7 @@ export function CustomPageForm() {
                             <Trash2 size={16} />
                         </button>
 
-                        <div className="flex gap-4">
+                        <div className="flex flex-col md:flex-row gap-4">
                             <div className="flex-1 space-y-3">
                                 {/* 頁面標題 */}
                                 <div>
@@ -113,28 +119,27 @@ export function CustomPageForm() {
                             {/* 圖片管理 */}
                             <div className="flex-1 space-y-2">
                                 <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
-                                    <span><ImageIcon size={16} className="inline mr-1 text-gray-400" />圖片網址</span>
-                                    <button onClick={() => addImage(index)} className="text-xs text-blue-500 hover:text-blue-600 flex items-center">
-                                        <Plus size={12} /> 新增圖片
-                                    </button>
+                                    <span><ImageIcon size={16} className="inline mr-1 text-gray-400" />圖片管理</span>
                                 </label>
-                                <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                <div className="grid grid-cols-2 gap-2">
                                     {page.images.map((img, imgIdx) => (
-                                        <div key={imgIdx} className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={img}
-                                                onChange={(e) => updateImage(index, imgIdx, e.target.value)}
-                                                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-blue-500 outline-none"
-                                                placeholder="https://..."
-                                            />
-                                            <button onClick={() => removeImage(index, imgIdx)} className="text-red-400 hover:text-red-600">
-                                                <Trash2 size={14} />
-                                            </button>
+                                        <div key={imgIdx} className="relative aspect-video rounded-lg overflow-hidden group/img border border-gray-200 bg-white">
+                                            <img src={img} alt="" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => removeImage(index, imgIdx)}
+                                                    className="bg-white/90 text-red-500 p-1.5 rounded-full hover:scale-110"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
-                                    {page.images.length === 0 && <div className="text-xs text-gray-400 italic">尚未新增圖片</div>}
+                                    {page.images.length < 4 && (
+                                        <ImageUploader onUpload={(file) => handleImageUpload(index, file)} />
+                                    )}
                                 </div>
+                                <p className="text-[10px] text-gray-400 italic">支援貼上圖片或拖曳上傳</p>
                             </div>
                         </div>
 
@@ -165,3 +170,36 @@ export function CustomPageForm() {
         </div>
     );
 }
+
+function ImageUploader({ onUpload }: { onUpload: (file: File) => void }) {
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        if (acceptedFiles[0]) onUpload(acceptedFiles[0]);
+    }, [onUpload]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop, accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] }, maxFiles: 1
+    });
+
+    return (
+        <div
+            {...getRootProps()}
+            tabIndex={0}
+            onPaste={(e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        const file = items[i].getAsFile();
+                        if (file) { onUpload(file); e.preventDefault(); break; }
+                    }
+                }
+            }}
+            className={`relative aspect-video rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors outline-none focus:border-blue-300 ${isDragActive ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:bg-gray-50'
+                }`}
+        >
+            <input {...getInputProps()} />
+            <ImagePlus size={20} className={isDragActive ? 'text-blue-500' : 'text-gray-400'} />
+            <span className="text-[10px] text-gray-400 mt-1">貼上或上傳</span>
+        </div>
+    );
+}
+

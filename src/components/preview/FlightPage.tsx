@@ -116,7 +116,7 @@ export function FlightPage() {
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0 flex items-center gap-1">
               <MapPin size={10} /> 集合地點
             </p>
-            <p className="text-[11px] font-bold text-gray-800 leading-tight">{data.meetingPoint || '請洽旅行社確認'}</p>
+            <p className="dynamic-text font-bold text-gray-800 leading-tight">{data.meetingPoint || '請洽旅行社確認'}</p>
           </div>
           <div className="bg-gray-50/80 p-2 rounded-lg border border-gray-100 flex flex-col justify-center">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0 flex items-center gap-1">
@@ -137,12 +137,12 @@ export function FlightPage() {
             <div className="col-span-2 pb-1 border-b border-gray-50 mb-0.5 grid grid-cols-2 gap-x-4">
               <div className="space-y-0.5">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">領隊</p>
-                <p className="text-base font-black text-gray-900 leading-none">{data.tourLeader || '敬請期待'}</p>
+                <p className="dynamic-text font-black text-gray-900 leading-none">{data.tourLeader || '敬請期待'}</p>
               </div>
               {data.tourLeaderPhone && (
                 <div className="space-y-0.5">
                   <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">領隊手機號碼</p>
-                  <p className="text-sm font-black tracking-wider leading-none" style={{ color: data.theme.primary }}>
+                  <p className="dynamic-text font-black tracking-wider leading-none" style={{ color: data.theme.primary }}>
                     {data.tourLeaderPhone}
                   </p>
                 </div>
@@ -161,7 +161,7 @@ export function FlightPage() {
               <span className="text-[11px] font-bold text-gray-500 leading-none tracking-tight">
                 {data.agencyPhone || '02-8789-6699'}
               </span>
-              <p className="text-sm font-black tracking-wider text-gray-900 leading-none">
+              <p className="dynamic-text font-black tracking-wider text-gray-900 leading-none">
                 {data.agencyMobile || data.emergencyPhone || '0911-111-111'}
               </p>
             </div>
@@ -172,7 +172,7 @@ export function FlightPage() {
         {data.meetingMap && (
           <div className="bg-gray-100/50 p-1.5 rounded-xl border border-gray-200">
             <div className="bg-white rounded-lg overflow-hidden shadow-inner">
-              <img src={data.meetingMap} alt="Airport Meeting Map" className="w-full h-auto max-h-[140px] object-contain" />
+              <img src={data.meetingMap} alt="Airport Meeting Map" className="w-full h-auto dynamic-img-h-airport-map object-contain" />
             </div>
             <p className="text-center text-[9px] font-bold text-gray-400 mt-1 tracking-widest uppercase">機場集合地圖</p>
           </div>

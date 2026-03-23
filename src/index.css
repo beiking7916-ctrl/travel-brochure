@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -229,3 +229,20 @@ body {
 .print-a4-landscape {
   page: a4-landscape;
 }
+
+/* 內容字體大小動態控制 */
+.dynamic-text {
+  font-size: var(--content-font-size, 14px) !important;
+  line-height: 1.6 !important;
+}
+
+/* 圖片高度動態控制 */
+.dynamic-img-h-48 { height: calc(12rem * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-h-32 { height: calc(8rem * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-h-24 { height: calc(6rem * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-h-hotel-main { height: calc(140px * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-h-hotel-sub { height: calc(90px * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-aspect { padding-top: calc(50% * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-aspect-hotel { padding-bottom: calc(60% * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-max-h-24 { max-height: calc(6rem * var(--image-height-scale, 1.0)) !important; }
+.dynamic-img-h-airport-map { max-height: calc(140px * var(--image-height-scale, 1.0)) !important; }

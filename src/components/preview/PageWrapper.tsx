@@ -16,7 +16,13 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
         return (
             <div
                 className={`a5-page p-6 flex flex-col relative ${className}`}
-                style={{ backgroundColor: data.theme.secondary, color: data.theme.text }}
+                style={{ 
+                    backgroundColor: data.theme.secondary, 
+                    color: data.theme.text,
+                    '--content-font-size': `${data.contentFontSize || 14}px`,
+                    '--image-height-scale': data.imageHeightScale || 1.0,
+                    'fontFamily': data.fontFamily || "'Noto Sans TC', sans-serif"
+                } as React.CSSProperties}
             >
                 {children}
             </div>
@@ -39,7 +45,13 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
     return (
         <div
             className={`a5-page relative overflow-hidden flex flex-col pt-12 pb-12 px-6 ${className}`}
-            style={{ backgroundColor: data.theme.secondary, color: data.theme.text }}
+            style={{ 
+                backgroundColor: data.theme.secondary, 
+                color: data.theme.text,
+                '--content-font-size': `${data.contentFontSize || 14}px`,
+                '--image-height-scale': data.imageHeightScale || 1.0,
+                'fontFamily': data.fontFamily || "'Noto Sans TC', sans-serif"
+            } as React.CSSProperties}
         >
             {/* 頁首 (由 CSS nth-of-type flex-direction 控制左右排列) */}
             <div

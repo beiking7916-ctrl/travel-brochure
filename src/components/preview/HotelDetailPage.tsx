@@ -26,8 +26,8 @@ export function HotelDetailPage() {
                         <div className="flex flex-col flex-1 min-h-0 space-y-4">
                             {/* 1. 頂部：房間大圖 (Image 1) */}
                             {hotel.images.length > 0 && (
-                                <div className="w-full h-[140px] rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0">
-                                    <img src={hotel.images[0]} alt="" className="w-full h-full object-cover" />
+                                <div className="w-full dynamic-img-h-hotel-main rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0 relative">
+                                    <img src={hotel.images[0]} alt="" className="absolute inset-0 w-full h-full object-cover" />
                                 </div>
                             )}
 
@@ -41,7 +41,7 @@ export function HotelDetailPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="prose prose-sm max-w-none text-gray-600 leading-[1.6] text-xs whitespace-pre-wrap">
+                                <div className="dynamic-text prose prose-sm max-w-none text-gray-600 whitespace-pre-wrap">
                                     {hotel.intro}
                                 </div>
                             </div>
@@ -59,7 +59,7 @@ export function HotelDetailPage() {
                                         </h3>
                                         <div className={`grid ${hasBottomImages ? 'grid-cols-1' : 'grid-cols-2'} gap-y-1.5 overflow-y-auto custom-scrollbar pr-2`}>
                                             {hotel.facilities?.map((f, i) => (
-                                                <div key={i} className="text-[11px] text-gray-600 flex items-center gap-1.5 leading-tight">
+                                                <div key={i} className="dynamic-text text-gray-600 flex items-center gap-1.5">
                                                     <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
                                                     {f}
                                                 </div>
@@ -71,12 +71,12 @@ export function HotelDetailPage() {
                                 const ImageTab = hasBottomImages ? (
                                     <div className="flex flex-col gap-3">
                                         {hotel.images.slice(1, 3).map((img, i) => (
-                                            <div key={i} className="h-[90px] rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0">
-                                                <img src={img} alt="" className="w-full h-full object-cover" />
+                                            <div key={i} className="dynamic-img-h-hotel-sub rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0 relative">
+                                                <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" />
                                             </div>
                                         ))}
                                         {hotel.images.length === 2 && (
-                                            <div className="h-[90px] rounded-xl bg-gray-50/50 border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300">
+                                            <div className="dynamic-img-h-hotel-sub rounded-xl bg-gray-50/50 border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300">
                                                 <Building2 size={20} className="opacity-20" />
                                             </div>
                                         )}

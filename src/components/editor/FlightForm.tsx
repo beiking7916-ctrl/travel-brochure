@@ -146,6 +146,15 @@ export function FlightForm() {
             <label className={labelClassName}>機場集合地點地圖</label>
             <div
               {...getMapProps()}
+              onPaste={(e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                  if (items[i].type.startsWith('image/')) {
+                    const file = items[i].getAsFile();
+                    if (file) { handleMapUpload(file); e.preventDefault(); break; }
+                  }
+                }
+              }}
               className={`relative border-2 border-dashed rounded-xl text-center cursor-pointer transition-all h-64 flex flex-col items-center justify-center overflow-hidden outline-none ${isMapDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-white'}`}
             >
               <input {...getMapInputProps()} />

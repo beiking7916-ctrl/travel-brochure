@@ -94,6 +94,15 @@ export function Header({
 
     const handlePrint = () => {
         // 標準 A5 直式列印
+        const oldTitle = document.title;
+        const now = new Date();
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const mmdd = `${mm}${dd}`;
+        
+        // 暫時修改標題以改變輸出 PDF 檔名
+        document.title = `${data.title || '旅遊手冊'}－手冊${mmdd}`;
+
         document.body.classList.remove('print-cover-mode');
         const printStyle = document.createElement('style');
         printStyle.id = 'force-fullpage-print';
@@ -103,7 +112,9 @@ export function Header({
         `;
         document.head.appendChild(printStyle);
         window.print();
+
         setTimeout(() => {
+            document.title = oldTitle;
             const el = document.getElementById('force-fullpage-print');
             if (el) el.remove();
         }, 1000);
@@ -111,6 +122,15 @@ export function Header({
 
     const handlePrintCover = () => {
         // A4 橫式封面+封底跨頁列印
+        const oldTitle = document.title;
+        const now = new Date();
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const mmdd = `${mm}${dd}`;
+        
+        // 暫時修改標題以改變輸出 PDF 檔名
+        document.title = `${data.title || '旅遊手冊'}－封面封底_${mmdd}`;
+
         document.body.classList.add('print-cover-mode');
         const printStyle = document.createElement('style');
         printStyle.id = 'force-spread-print';
@@ -120,7 +140,9 @@ export function Header({
         `;
         document.head.appendChild(printStyle);
         window.print();
+
         setTimeout(() => {
+            document.title = oldTitle;
             document.body.classList.remove('print-cover-mode');
             const el = document.getElementById('force-spread-print');
             if (el) el.remove();
@@ -132,10 +154,13 @@ export function Header({
         const dataStr = JSON.stringify(data, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
-        // 產生預設檔名，包含日期與旅行社名稱 (如果有的話)
-        const date = new Date().toISOString().split('T')[0];
-        const prefix = data.agency ? `${data.agency}-` : '';
-        const exportFileDefaultName = `${prefix}travel-brochure-${date}.json`;
+        const now = new Date();
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const mmdd = `${mm}${dd}`;
+        
+        // 產生預設檔名：標題＋草稿_mmdd
+        const exportFileDefaultName = `${data.title || '旅遊手冊'}－草稿_${mmdd}.json`;
 
         // 模擬點擊下載連結
         const linkElement = document.createElement('a');

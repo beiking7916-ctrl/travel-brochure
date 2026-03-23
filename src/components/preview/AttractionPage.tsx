@@ -94,7 +94,7 @@ export function AttractionPage() {
                                 </div>
 
                                 <div className="bg-gray-50/50 p-3 rounded-xl flex-1 flex flex-col min-h-0">
-                                    <div className={`prose prose-sm max-w-none text-xs text-gray-600 leading-relaxed font-medium ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
+                                    <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
                                         {attraction.description}
                                     </div>
                                     {renderLayout(attraction, pageAttractions.length > 1)}

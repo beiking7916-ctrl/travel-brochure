@@ -19,7 +19,7 @@ export function BackCoverPage() {
         <div className="flex flex-col items-center gap-8 w-full max-w-sm">
           {data.logo && (
             <div className="max-w-[200px] mb-4">
-              <img src={data.logo} alt="Logo" className="w-full h-auto object-contain max-h-24" />
+              <img src={data.logo} alt="Logo" className="w-full h-auto object-contain dynamic-img-max-h-24" />
             </div>
           )}
           
@@ -42,11 +42,11 @@ export function BackCoverPage() {
                 </div>
               )}
               {data.backCoverText ? (
-                <div className="mt-8 text-xs opacity-70 whitespace-pre-wrap leading-relaxed max-w-[280px]">
+                <div className="mt-8 dynamic-text opacity-70 whitespace-pre-wrap leading-relaxed max-w-[280px]">
                   {data.backCoverText}
                 </div>
               ) : (
-                <p className="mt-8 text-xs opacity-60 flex flex-col gap-1">
+                <p className="mt-8 dynamic-text opacity-60 flex flex-col gap-1">
                   <span>感謝您的參與，祝您旅途愉快</span>
                   <span>Have a Wonderful Trip!</span>
                 </p>

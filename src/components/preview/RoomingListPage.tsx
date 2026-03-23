@@ -18,7 +18,7 @@ export function RoomingListPage() {
             <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-gray-800">
                 {/* Rooming Table */}
                 <div className="flex-1 overflow-hidden p-2.5">
-                    <table className="w-full text-[10px] text-center border-collapse border border-gray-200 table-fixed">
+                    <table className="w-full dynamic-text text-center border-collapse border border-gray-200 table-fixed">
                         <thead className="bg-[#f8f9fa] text-gray-700 font-bold tracking-tight">
                             <tr>
                                 <th className="border border-gray-200 px-1 py-1.5 w-[35px]">編號</th>
@@ -69,7 +69,7 @@ export function RoomingListPage() {
                                                 </td>
 
                                                 {/* 2. 姓名 */}
-                                                <td className="border border-gray-200 px-2 py-1 text-left font-bold text-gray-800 text-xs truncate">
+                                                <td className="border border-gray-200 px-2 py-1 text-left font-bold text-gray-800 dynamic-text truncate">
                                                     {name || '-'}
                                                 </td>
 
@@ -80,7 +80,7 @@ export function RoomingListPage() {
                                                         if (nameIdx !== 0) return null;
                                                         return (
                                                             <td key={hIdx} className="border border-gray-200 px-1 py-2 bg-white align-middle" rowSpan={peopleCount}>
-                                                                <div className="font-bold text-gray-800 text-xs tracking-tighter uppercase text-center">
+                                                                <div className="font-bold text-gray-800 dynamic-text tracking-tighter uppercase text-center">
                                                                     {data.showRoomNumber !== false ? (roomNo || '-') : ''}
                                                                 </div>
                                                             </td>
@@ -100,7 +100,7 @@ export function RoomingListPage() {
                                                 {nameIdx === 0 && (
                                                     <td className="border border-gray-200 px-2 py-2 bg-white align-middle text-left" rowSpan={peopleCount}>
                                                         {room.remarks ? (
-                                                            <div className="text-[8px] text-gray-500 leading-tight line-clamp-3">
+                                                            <div className="dynamic-text text-gray-500 leading-tight line-clamp-3">
                                                                 {room.remarks}
                                                             </div>
                                                         ) : (

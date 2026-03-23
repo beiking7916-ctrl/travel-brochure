@@ -92,7 +92,7 @@ export function HotelPage() {
                         </div>
                       )}
                       {/* 確保即使圖片為 absolute 也有最小高度 */}
-                      <div className="pb-[60%] md:pb-0 md:h-full min-h-[120px]"></div>
+                      <div className="dynamic-img-aspect-hotel md:pb-0 md:h-full min-h-[120px]"></div>
                     </div>
 
                     {/* 飯店資訊 */}
@@ -104,23 +104,23 @@ export function HotelPage() {
                       <div className="space-y-2">
                         <div className="flex items-start gap-2 text-xs text-gray-600">
                           <MapPin size={14} className="mt-0.5 flex-shrink-0 text-gray-400" />
-                          <span className="leading-relaxed">{hotel.address || '地址待確認'}</span>
+                          <span className="dynamic-text leading-relaxed">{hotel.address || '地址待確認'}</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <Phone size={14} className="flex-shrink-0 text-gray-400" />
-                          <span>{hotel.phone || '電話待確認'}</span>
+                          <span className="dynamic-text">{hotel.phone || '電話待確認'}</span>
                         </div>
 
                         {hotel.morningCall && (
-                          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 rounded text-[11px] font-medium border border-blue-100 mt-1">
+                          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 rounded dynamic-text font-medium border border-blue-100 mt-1">
                             <Clock size={12} />
                             Morning Call: {hotel.morningCall}
                           </div>
                         )}
                         {hotel.description && (
                           <div className="mt-2 pt-2 border-t border-gray-100">
-                            <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{hotel.description}</p>
+                            <p className="dynamic-text text-gray-700 whitespace-pre-wrap leading-relaxed">{hotel.description}</p>
                           </div>
                         )}
                       </div>

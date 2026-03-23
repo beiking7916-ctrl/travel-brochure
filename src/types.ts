@@ -188,6 +188,9 @@ export interface BrochureData {
   isDeleted?: boolean; // 新增：是否已作廢
   showAgencyOnCover?: boolean; // 新增：封面是否顯示旅行社名稱
   backCoverText?: string; // 新增：封底自訂文字
+  contentFontSize?: number; // 新增：內容文字字體大小 (px)
+  imageHeightScale?: number; // 新增：圖片顯示高度比例 (0.5 ~ 1.5)
+  fontFamily?: string; // 新增：字體選擇
 }
 
 export const defaultTheme: ThemeColors = {
@@ -364,6 +367,9 @@ export function createDefaultData(): BrochureData {
     headerLogo: '',
     headerText: '',
     showAgencyOnCover: true,
+    contentFontSize: 14, // 預設 14px
+    imageHeightScale: 1.0, // 預設 1.0
+    fontFamily: "'Noto Sans TC', sans-serif", // 預設思源黑體
   };
 }
 

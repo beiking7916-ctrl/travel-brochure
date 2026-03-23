@@ -43,7 +43,7 @@ export function PackingPage() {
       <div className={`w-3.5 h-3.5 rounded-sm border-[1.5px] flex-shrink-0 flex items-center justify-center ${important ? 'border-amber-400 bg-amber-50' : 'border-gray-300'}`}>
         {important && <div className="w-1 h-1 bg-amber-400 rounded-full" />}
       </div>
-      <span className={`text-[11px] font-medium whitespace-nowrap leading-none ${important ? 'text-amber-700 font-bold flex items-center gap-1' : 'text-gray-700'}`}>
+      <span className={`dynamic-text font-medium whitespace-nowrap leading-none ${important ? 'text-amber-700 font-bold flex items-center gap-1' : 'text-gray-700'}`}>
         {label}
         {important && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 rounded-sm leading-none py-0.5 border border-amber-200 uppercase tracking-tighter">Urgent</span>}
       </span>
@@ -153,15 +153,15 @@ export function PackingPage() {
 
         {/* 底部提醒事項 */}
         <div className="mt-auto space-y-1 pt-2 border-t border-gray-100">
-          <div className="flex items-start gap-1 text-[8.5px] text-gray-600 leading-[1.3] font-medium">
+          <div className="flex items-start gap-1 dynamic-text text-gray-600 leading-[1.3] font-medium">
             <span className="text-gray-900">●</span>
             <span>刮鬍泡、噴霧水、萬用刀、螺絲起子、壓縮氣體、液體容器或刀具等，不得隨身攜帶。</span>
           </div>
-          <div className="flex items-start gap-1 text-[8.5px] text-gray-600 leading-[1.3] font-medium">
+          <div className="flex items-start gap-1 dynamic-text text-gray-600 leading-[1.3] font-medium">
             <span className="text-gray-900">●</span>
             <span>液體、膠狀物品及液化氣體，如果以容器裝妥且每樣不超過100毫升，可放入隨身行李中。</span>
           </div>
-          <div className="flex items-start gap-1 text-[8.5px] text-red-500 leading-[1.3] font-medium">
+          <div className="flex items-start gap-1 dynamic-text text-red-500 leading-[1.3] font-medium">
             <span className="text-red-600">●</span>
             <span>鋰電池、打火機及行動電源，不可放入託運行李內，請隨身攜帶；含有鋰或鋰離子電池之電子裝 置，如手錶、計算機、照相機、手機、手提電腦及錄影錄影機等，須放置於手提行李中。</span>
           </div>
