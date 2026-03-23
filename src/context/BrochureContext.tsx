@@ -32,8 +32,20 @@ export function BrochureProvider({ children, initialData }: { children: ReactNod
       merged.flights = initialData.flights || defaults.flights;
       merged.hotels = initialData.hotels || defaults.hotels;
       merged.hotelDetails = initialData.hotelDetails || defaults.hotelDetails;
-      merged.itineraries = initialData.itineraries || defaults.itineraries;
-      merged.attractions = initialData.attractions || defaults.attractions;
+      
+      // 補齊 ID (Data Migration for Attractions and Itineraries)
+      const rawItineraries = initialData.itineraries || defaults.itineraries;
+      merged.itineraries = rawItineraries.map(day => ({
+        ...day,
+        id: (day as any).id || crypto.randomUUID()
+      }));
+
+      const rawAttractions = initialData.attractions || defaults.attractions;
+      merged.attractions = rawAttractions.map(attr => ({
+        ...attr,
+        id: (attr as any).id || crypto.randomUUID()
+      }));
+
       merged.packingList = initialData.packingList || defaults.packingList;
       merged.gridTips = initialData.gridTips || defaults.gridTips;
       merged.roomingList = initialData.roomingList || defaults.roomingList;

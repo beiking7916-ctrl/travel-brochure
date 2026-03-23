@@ -24,6 +24,7 @@ export interface Hotel {
 }
 
 export interface ItineraryDay {
+  id: string; // 新增：唯一 ID 用於個別設定
   title: string;
   description: string;
   attractions?: string; // 景點介紹
@@ -68,6 +69,7 @@ export interface Tips {
 }
 
 export interface Attraction {
+  id: string; // 新增：唯一 ID 用於個別設定
   title: string;
   description: string;
   images: string[];
@@ -376,6 +378,7 @@ export function createDefaultData(): BrochureData {
 
 export function initializeItineraries(duration: number): ItineraryDay[] {
   return Array.from({ length: duration }, (_, i) => ({
+    id: crypto.randomUUID(),
     title: `第 ${i + 1} 天`,
     description: '',
     attractions: '',

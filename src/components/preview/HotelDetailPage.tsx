@@ -10,7 +10,7 @@ export function HotelDetailPage() {
     return (
         <>
             {data.hotelDetails.map((hotel, idx) => (
-                <PageWrapper key={hotel.id} sectionId="hotelDetail" title={idx === 0 ? "飯店介紹" : ""} icon={idx === 0 ? <Building2 size={24} /> : undefined}>
+                <PageWrapper key={hotel.id} sectionId={hotel.id} title={idx === 0 ? "飯店介紹" : ""} icon={idx === 0 ? <Building2 size={24} /> : undefined}>
                     <div className="flex flex-col h-full py-2">
 
                         <div className="flex items-center mb-3">

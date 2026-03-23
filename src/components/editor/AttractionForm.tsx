@@ -112,6 +112,7 @@ export function AttractionForm() {
             attractions: [
                 ...(data.attractions || []),
                 {
+                    id: (libraryItem as any).id || crypto.randomUUID(),
                     title: libraryItem.title || '',
                     description: libraryItem.description || '',
                     images: libraryItem.images || [],
@@ -127,7 +128,15 @@ export function AttractionForm() {
         updateData({
             attractions: [
                 ...(data.attractions || []),
-                { title: '', description: '', images: [], layout: 'top-1-bottom-2', isTwoPerPage: false, pageBreakAfter: false },
+                { 
+                    id: crypto.randomUUID(), 
+                    title: '', 
+                    description: '', 
+                    images: [], 
+                    layout: 'top-1-bottom-2', 
+                    isTwoPerPage: false, 
+                    pageBreakAfter: false 
+                },
             ],
         });
     };
@@ -184,7 +193,6 @@ export function AttractionForm() {
 
     return (
         <div className="space-y-6 pb-20">
-            <SectionSettings id="attraction" />
             <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
                     <Camera size={20} />
@@ -384,6 +392,8 @@ export function AttractionForm() {
                                     <Trash2 size={16} />
                                 </button>
                             </div>
+
+                            <SectionSettings id={attraction.id} />
 
                             <div className="grid grid-cols-[1fr_200px] gap-6 pl-2 mt-4">
                                 <div className="space-y-4">

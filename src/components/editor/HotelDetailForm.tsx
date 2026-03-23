@@ -58,7 +58,6 @@ export function HotelDetailForm() {
 
     return (
         <div className="space-y-6 pb-20">
-            <SectionSettings id="hotelDetail" />
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
                     <Building2 size={20} />
@@ -79,12 +78,16 @@ export function HotelDetailForm() {
                     <div key={hotel.id} className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm relative group overflow-hidden">
                         <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: data.theme.secondary || '#9ca3af' }} />
 
-                        <button
-                            onClick={() => removeHotelDetail(index)}
-                            className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                            <Trash2 size={18} />
-                        </button>
+                        <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => removeHotelDetail(index)}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </div>
+                        
+                        <SectionSettings id={hotel.id} />
 
                         <div className="grid md:grid-cols-2 gap-6 pl-2">
                             <div className="space-y-4">

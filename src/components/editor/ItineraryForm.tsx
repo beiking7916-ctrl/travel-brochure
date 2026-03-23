@@ -13,6 +13,7 @@ export function ItineraryForm() {
       itineraries: [
         ...data.itineraries,
         {
+          id: crypto.randomUUID(),
           title: '',
           description: '',
           attractions: '',
@@ -66,7 +67,6 @@ export function ItineraryForm() {
 
   return (
     <div className="space-y-4">
-      <SectionSettings id="itinerary" />
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
           <MapPin size={20} />
@@ -175,6 +175,10 @@ export function ItineraryForm() {
                     <DayImageUploader onUpload={(file) => handleImageUpload(index, file)} />
                   </div>
                 </div>
+              </div>
+              
+              <div className="px-5 pb-5">
+                <SectionSettings id={day.id} />
               </div>
             </div>
           </div>
