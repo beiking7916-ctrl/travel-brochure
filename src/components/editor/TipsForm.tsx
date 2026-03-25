@@ -258,13 +258,25 @@ export function TipsForm() {
 
       {/* 9宮格版本 */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2" style={{ color: data.theme.primary }}>
-          <Lightbulb size={20} />
-          貼心小叮嚀 (九宮格設計)
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
+            <Lightbulb size={20} />
+            貼心小叮嚀 (九宮格設計)
+          </h3>
+          <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+            <input
+              type="checkbox"
+              checked={data.gridTipsSingle || false}
+              onChange={(e) => updateData({ gridTipsSingle: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-bold text-blue-700">使用單一置中模式</span>
+          </label>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.gridTips.map((tip, index) => {
+        <div className={`grid gap-4 ${data.gridTipsSingle ? 'grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          {/* 如果是單一模式，我們只顯示第一個項目，或者我們可以讓它編輯第一個並套用到預覽 */}
+          {(data.gridTipsSingle ? data.gridTips.slice(0, 1) : data.gridTips).map((tip, index) => {
             return (
               <div key={tip.id} className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-full">
                 <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">

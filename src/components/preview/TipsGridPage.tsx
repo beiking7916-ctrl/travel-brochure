@@ -1,6 +1,6 @@
 import React from 'react';
 import { useBrochure } from '../../context/BrochureContext';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, CheckSquare } from 'lucide-react';
 import { PageWrapper } from './PageWrapper';
 import { parseRichText } from '../../lib/textParser';
 
@@ -21,8 +21,40 @@ export function TipsGridPage() {
     const { data } = useBrochure();
     const sortedTips = data.gridTips; // 保持 9 宮格順序
 
+    // 如果是單一模式，渲染一個大的置中卡片
+    if (data.gridTipsSingle) {
+        const tip = sortedTips[0];
+        if (!tip) return null;
+        return (
+            <PageWrapper sectionId="gridTips" title="貼心小叮嚀" icon={<CheckSquare size={18} />}>
+                <div className="flex flex-col items-center justify-center h-full py-12 px-8">
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 w-full max-w-lg flex flex-col items-center text-center space-y-8 transform hover:scale-[1.02] transition-transform duration-500">
+                        {tip.image ? (
+                            <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gray-50 p-2 shadow-inner">
+                                <img src={tip.image} alt={tip.title} className="w-full h-full object-contain" />
+                            </div>
+                        ) : (
+                            <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                <CheckSquare size={48} strokeWidth={1.5} />
+                            </div>
+                        )}
+                        <div className="space-y-4 w-full">
+                            <h3 className="text-2xl font-black tracking-tight" style={{ color: data.theme.primary }}>
+                                {tip.title}
+                            </h3>
+                            <div className="w-12 h-1 bg-blue-500/20 mx-auto rounded-full" />
+                            <p className="dynamic-text text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium">
+                                {parseRichText(tip.content, data.theme.primary)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </PageWrapper>
+        );
+    }
+
     return (
-        <PageWrapper sectionId="gridTips" title="貼心小叮嚀" icon={<Lightbulb size={24} />}>
+        <PageWrapper sectionId="gridTips" title="貼心小叮嚀" icon={<CheckSquare size={24} />}>
             <div className="flex-grow flex flex-col justify-center w-full px-2 py-2">
                 <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
                     {sortedTips.map((tip) => {

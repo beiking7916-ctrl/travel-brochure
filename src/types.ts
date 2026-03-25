@@ -194,6 +194,7 @@ export interface BrochureData {
   imageHeightScale?: number; // 新增：圖片顯示高度比例 (0.5 ~ 1.5)
   fontFamily?: string; // 新增：字體選擇
   pageSettings?: Record<string, { fontSize?: number; imageScale?: number }>; // 新增：各頁面個別設定
+  gridTipsSingle?: boolean; // 新增：貼心小叮嚀是否改用單一卡片模式
 }
 
 export const defaultTheme: ThemeColors = {

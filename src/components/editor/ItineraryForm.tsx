@@ -98,6 +98,15 @@ export function ItineraryForm() {
                 />
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <label className="flex items-center gap-1.5 mr-2 cursor-pointer group/break">
+                  <input
+                    type="checkbox"
+                    checked={day.pageBreakBefore || false}
+                    onChange={(e) => updateDay(index, 'pageBreakBefore', e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  <span className="text-[10px] font-bold text-gray-400 group-hover/break:text-orange-500 transition-colors">分頁</span>
+                </label>
                 <button onClick={() => moveDay(index, 'up')} disabled={index === 0} className="p-1.5 text-gray-400 hover:text-blue-500 disabled:opacity-20 hover:bg-white rounded-lg transition-all"><ChevronUp size={16} /></button>
                 <button onClick={() => moveDay(index, 'down')} disabled={index === data.itineraries.length - 1} className="p-1.5 text-gray-400 hover:text-blue-500 disabled:opacity-20 hover:bg-white rounded-lg transition-all"><ChevronDown size={16} /></button>
                 <button onClick={() => removeDay(index)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1"><Trash2 size={16} /></button>

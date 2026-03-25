@@ -4,6 +4,7 @@ import { Camera } from 'lucide-react';
 import { PageWrapper } from './PageWrapper';
 import { Attraction } from '../../types';
 import { getAttractionPages } from '../../lib/pagination';
+import { parseRichText } from '../../lib/textParser';
 
 export function AttractionPage() {
     const { data } = useBrochure();
@@ -95,8 +96,8 @@ export function AttractionPage() {
                                 </div>
 
                                 <div className="bg-gray-50/50 p-3 rounded-xl flex-1 flex flex-col min-h-0">
-                                    <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
-                                        {attraction.description}
+                                    <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium whitespace-pre-wrap ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
+                                        {parseRichText(attraction.description, data.theme.primary)}
                                     </div>
                                     {renderLayout(attraction, pageAttractions.length > 1)}
                                 </div>

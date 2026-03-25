@@ -292,6 +292,58 @@ export function BasicInfoForm() {
             />
           </div>
         </div>
+
+        {/* 緊急聯絡資訊 */}
+        <hr className="my-4 border-gray-100" />
+        <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <span>🚨</span> 緊急聯絡人與旅行社資訊
+        </h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClassName}>緊急聯絡人姓名</label>
+            <input
+              type="text"
+              value={data.emergencyContactName || ''}
+              onChange={(e) => updateData({ emergencyContactName: e.target.value })}
+              className={inputClassName}
+              placeholder="例如：張小明"
+            />
+          </div>
+          <div>
+            <label className={labelClassName}>緊急聯絡電話</label>
+            <input
+              type="tel"
+              value={data.emergencyPhone || ''}
+              onChange={(e) => updateData({ emergencyPhone: e.target.value })}
+              className={inputClassName}
+              placeholder="09xx-xxx-xxx"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClassName}>旅行社市話</label>
+            <input
+              type="text"
+              value={data.agencyPhone || ''}
+              onChange={(e) => updateData({ agencyPhone: e.target.value })}
+              className={inputClassName}
+              placeholder="02-xxxx-xxxx"
+            />
+          </div>
+          <div>
+            <label className={labelClassName}>旅行社手機/24H</label>
+            <input
+              type="text"
+              value={data.agencyMobile || ''}
+              onChange={(e) => updateData({ agencyMobile: e.target.value })}
+              className={inputClassName}
+              placeholder="09xx-xxx-xxx"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 目錄設定 */}
