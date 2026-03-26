@@ -95,12 +95,37 @@ export function TipsForm() {
 
       {/* 經典文字版本 */}
       <div className="space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2 gap-2">
-          <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
-            <AlertCircle size={20} />
-            旅遊注意事項
-          </h3>
-          <div className="text-[11px] text-gray-500 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100/70 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between mb-2 gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
+                <AlertCircle size={20} />
+                旅遊注意事項
+              </h3>
+              <SectionSettings id="tips" />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={data.tips.showAutoNumbering || false}
+                  onChange={(e) => updateData({ tips: { ...data.tips, showAutoNumbering: e.target.checked } })}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-bold text-blue-700 whitespace-nowrap">文字自動編號</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={data.tips.showSectionNumbering || false}
+                  onChange={(e) => updateData({ tips: { ...data.tips, showSectionNumbering: e.target.checked } })}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-bold text-blue-700 whitespace-nowrap">分層標題編號</span>
+              </label>
+            </div>
+          </div>
+          <div className="text-[11px] text-gray-500 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100/70 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-md">
             <span className="font-semibold text-blue-700 flex items-center gap-1">文字標示語法：</span>
             <span className="flex items-center gap-1"><code className="bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200 font-mono">**文字**</code> 一般粗體</span>
             <span className="flex items-center gap-1"><code className="bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200 font-mono">//文字//</code> 系統色粗體</span>
@@ -152,16 +177,16 @@ export function TipsForm() {
                 <div key={key} className="space-y-3 p-4 bg-white border border-gray-200 rounded-xl relative group">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                     <div className="flex items-center gap-2">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
                         {index + 1}
-                        </span>
-                        <input
+                      </span>
+                      <input
                         type="text"
                         value={data.tips.customLabels?.[key] ?? label}
                         onChange={(e) => updateCustomLabel(key, e.target.value)}
                         className={`${labelClassName} !mb-0 text-base font-bold bg-transparent border-none p-0 focus:ring-0`}
                         style={{ color: data.theme.primary }}
-                        />
+                      />
                     </div>
                     <div className="flex gap-4 items-center">
                       <button
@@ -173,7 +198,6 @@ export function TipsForm() {
                       {headerActions}
                     </div>
                   </div>
-                  <SectionSettings id={key} />
 
                   <RichTextarea
                     themeColor={data.theme.primary}
@@ -240,7 +264,6 @@ export function TipsForm() {
                   </div>
                   {headerActions}
                 </div>
-                <SectionSettings id={key} />
                 <RichTextarea
                   themeColor={data.theme.primary}
                   value={data.tips[key as keyof Tips] as string || ''}
@@ -259,10 +282,13 @@ export function TipsForm() {
       {/* 9宮格版本 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
-            <Lightbulb size={20} />
-            貼心小叮嚀 (九宮格設計)
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: data.theme.primary }}>
+              <Lightbulb size={20} />
+              貼心小叮嚀 (九宮格設計)
+            </h3>
+            <SectionSettings id="gridTips" />
+          </div>
           <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
             <input
               type="checkbox"
@@ -275,7 +301,6 @@ export function TipsForm() {
         </div>
 
         <div className={`grid gap-4 ${data.gridTipsSingle ? 'grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-          {/* 如果是單一模式，我們只顯示第一個項目，或者我們可以讓它編輯第一個並套用到預覽 */}
           {(data.gridTipsSingle ? data.gridTips.slice(0, 1) : data.gridTips).map((tip, index) => {
             return (
               <div key={tip.id} className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-full">
@@ -292,8 +317,6 @@ export function TipsForm() {
                     placeholder="區塊標題"
                   />
                 </div>
-
-                <SectionSettings id={tip.id} />
 
                 <div className="flex-1 space-y-3 flex flex-col">
                   <TipImageUploader

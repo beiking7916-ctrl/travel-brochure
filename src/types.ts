@@ -66,6 +66,8 @@ export interface Tips {
   order?: string[]; // 新增：段落排序
   pageBreaks?: Record<string, boolean>; // 新增：換頁設定
   customLabels?: Record<string, string>; // 新增：自定義標題
+  showAutoNumbering?: boolean; // 新增：內容文字自動編號
+  showSectionNumbering?: boolean; // 新增：分層標題自動編號
 }
 
 export interface Attraction {

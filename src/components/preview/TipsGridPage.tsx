@@ -58,7 +58,7 @@ export function TipsGridPage() {
             <div className="flex-grow flex flex-col justify-center w-full px-2 py-2">
                 <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
                     {sortedTips.map((tip) => {
-                        const tipSettings = data.pageSettings?.[tip.id];
+                        const tipSettings = data.pageSettings?.["gridTips"];
                         const tipFontSize = tipSettings?.fontSize || data.contentFontSize || 14;
                         const tipImageScale = tipSettings?.imageScale || data.imageHeightScale || 1.0;
                         

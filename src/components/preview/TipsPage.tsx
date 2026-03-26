@@ -20,39 +20,49 @@ export function TipsPage() {
       {pages.map((pageItems, pageIdx) => (
         <PageWrapper
           key={`tips-page-${pageIdx}`}
-          sectionId={pageItems[0]?.key || 'tips'}
+          sectionId="tips"
           title="旅遊注意事項"
           icon={<AlertCircle size={24} />}
         >
           <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-gray-100 p-4 mt-2">
-            <div className="space-y-4">
+            <div className="space-y-6">
               {pageItems.map((item) => (
-                <div key={item.key} className="flex gap-3">
+                <div key={item.key} className="flex gap-4">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${data.theme.primary}15`, color: data.theme.primary }}>
                     <AlertCircle size={16} strokeWidth={1.5} />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold mb-1.5 tracking-widest text-gray-800 border-b border-gray-100 pb-1 inline-block">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold mb-3 tracking-widest text-gray-800 border-b border-gray-100 pb-1 inline-block">
                       {item.index}. {item.label}
                     </h3>
 
                     {item.content && (
-                      <p className="dynamic-text text-gray-600 text-justify whitespace-pre-wrap mb-3 font-medium">
-                        {parseRichText(item.content, data.theme.primary)}
-                      </p>
+                      <div className="space-y-2 mb-4">
+                        {item.content.split('\n').filter((line: string) => line.trim() !== '').map((line: string, lIdx: number) => (
+                          <p key={lIdx} className="dynamic-text text-gray-600 text-justify font-medium leading-relaxed">
+                            {data.tips.showAutoNumbering ? `${lIdx + 1}. ` : ''}
+                            {parseRichText(line, data.theme.primary)}
+                          </p>
+                        ))}
+                      </div>
                     )}
 
                     {item.sections && item.sections.length > 0 && (
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="grid grid-cols-1 gap-3">
                         {item.sections.map((section: any, sIdx: number) => (
-                          <div key={sIdx} className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                            <h4 className="font-bold text-sm text-gray-800 mb-1.5 flex items-center gap-1.5">
+                          <div key={sIdx} className="bg-gray-50/50 p-3.5 rounded-xl border border-gray-100">
+                            <h4 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              {data.tips.showSectionNumbering ? `${sIdx + 1}. ` : ''}
                               {section.title}
                             </h4>
-                            <p className="dynamic-text text-gray-600 whitespace-pre-wrap">
-                              {parseRichText(section.content, data.theme.primary)}
-                            </p>
+                            <div className="space-y-1.5">
+                              {section.content?.split('\n').filter((l: string) => l.trim() !== '').map((line: string, lIdx: number) => (
+                                <p key={lIdx} className="dynamic-text text-gray-600 text-justify leading-relaxed">
+                                  {parseRichText(line, data.theme.primary)}
+                                </p>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
