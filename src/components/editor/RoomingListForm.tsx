@@ -55,7 +55,7 @@ export function RoomingListForm() {
 
             newRooms.push({
                 id: crypto.randomUUID(),
-                roomNumber: (newRooms.length + (data.roomingList?.length || 0) + 1).toString().slice(0, 5),
+                roomNumber: (newRooms.length + 1).toString().slice(0, 5),
                 names: names,
                 roomType: names.length === 1 ? '單人房' : '雙人房',
                 hotelName: data.hotels?.[0]?.name || '',
@@ -63,7 +63,21 @@ export function RoomingListForm() {
                 remarks: '',
             });
         }
-        updateData({ roomingList: [...(data.roomingList || []), ...newRooms] });
+
+        // 檢查現有的 roomingList 是否全是空的預設房間
+        const isAllEmpty = (data.roomingList || []).every(r => r.names.every(n => !n.trim()));
+        
+        if (isAllEmpty) {
+            updateData({ roomingList: newRooms });
+        } else {
+            updateData({ roomingList: [...(data.roomingList || []), ...newRooms] });
+        }
+    };
+
+    const handleClearRooms = () => {
+        if (window.confirm('確定要清除所有房間資料嗎？')) {
+            updateData({ roomingList: [] });
+        }
     };
 
     const roomingList = data.roomingList || [];
@@ -85,6 +99,14 @@ export function RoomingListForm() {
                     </label>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleClearRooms}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                        title="清除所有資料"
+                    >
+                        <Trash2 size={16} />
+                        清除
+                    </button>
                     <button
                         onClick={handlePasteNames}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
@@ -127,10 +149,11 @@ export function RoomingListForm() {
                                                     type="text"
                                                     maxLength={5}
                                                     placeholder="#"
-                                                    value={room.hotelRooms?.[h.name] || ''}
+                                                    value={room.hotelRooms?.[h.name || `hotel_${i}`] || ''}
                                                     onChange={(e) => {
+                                                        const key = h.name || `hotel_${i}`;
                                                         const newRooms = { ...(room.hotelRooms || {}) };
-                                                        newRooms[h.name] = e.target.value.slice(0, 5);
+                                                        newRooms[key] = e.target.value.slice(0, 5);
                                                         handleUpdateRoom(index, { hotelRooms: newRooms });
                                                     }}
                                                     className="flex-1 text-xs border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500 font-mono"

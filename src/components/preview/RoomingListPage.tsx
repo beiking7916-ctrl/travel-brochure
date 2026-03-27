@@ -46,9 +46,10 @@ export function RoomingListPage() {
                             {(() => {
                                 // 1. 先排序：優先依照第一個飯店的房號排序，若無則依預設房號
                                 const sortedList = [...(data.roomingList || [])].sort((a, b) => {
-                                    const firstHotel = hotels[0]?.name;
-                                    const valA = firstHotel ? (a.hotelRooms?.[firstHotel] || '') : (a.roomNumber || '');
-                                    const valB = firstHotel ? (b.hotelRooms?.[firstHotel] || '') : (b.roomNumber || '');
+                                    const firstHotel = hotels[0];
+                                    const firstHotelKey = firstHotel ? (firstHotel.name || 'hotel_0') : '';
+                                    const valA = firstHotelKey ? (a.hotelRooms?.[firstHotelKey] || '') : (a.roomNumber || '');
+                                    const valB = firstHotelKey ? (b.hotelRooms?.[firstHotelKey] || '') : (b.roomNumber || '');
                                     return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
                                 });
 
@@ -76,7 +77,8 @@ export function RoomingListPage() {
                                                 {/* 3. 房號錄 (依據飯店數量動態產出) */}
                                                 {hasHotels ? (
                                                     hotels.map((h, hIdx) => {
-                                                        const roomNo = room.hotelRooms?.[h.name] || '';
+                                                        const key = h.name || `hotel_${hIdx}`;
+                                                        const roomNo = room.hotelRooms?.[key] || '';
                                                         if (nameIdx !== 0) return null;
                                                         return (
                                                             <td key={hIdx} className="border border-gray-200 px-1 py-2 bg-white align-middle" rowSpan={peopleCount}>

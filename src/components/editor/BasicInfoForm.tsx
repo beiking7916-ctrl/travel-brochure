@@ -285,10 +285,11 @@ export function BasicInfoForm() {
           <div>
             <label className={labelClassName}>集合時間</label>
             <input
-              type="time"
+              type="text"
               value={data.meetingTime}
               onChange={(e) => updateData({ meetingTime: e.target.value })}
               className={inputClassName}
+              placeholder="例如：10:30 (分區集合)"
             />
           </div>
         </div>
