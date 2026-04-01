@@ -101,6 +101,8 @@ export interface RoomingEntry {
   id: string;
   roomNumber: string; // 回溯相容：預設房號
   names: string[]; // ['Name 1', 'Name 2'] 支援單人或多人
+  units?: string[]; // 新增：單位
+  titles?: string[]; // 新增：職稱
   roomType: string; // '雙人房', '單人房', etc.
   remarks?: string;
   hotelName?: string; // 回溯相容
@@ -352,6 +354,8 @@ export function createDefaultData(): BrochureData {
       id: `room-${i}`,
       roomNumber: (i + 1).toString(),
       names: ['', ''],
+      units: ['', ''],
+      titles: ['', ''],
       roomType: '雙人房',
       remarks: '',
       hotelName: ''

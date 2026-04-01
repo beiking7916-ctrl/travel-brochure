@@ -69,9 +69,15 @@ export function RoomingListPage() {
                                                     {currentSeq}
                                                 </td>
 
-                                                {/* 2. 姓名 */}
-                                                <td className="border border-gray-200 px-2 py-1 text-left font-bold text-gray-800 dynamic-text truncate">
-                                                    {name || '-'}
+                                                <td className="border border-gray-200 px-2 py-1 text-left text-gray-800 dynamic-text truncate">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold">{name || '-'}</span>
+                                                        {(room.units?.[nameIdx] || room.titles?.[nameIdx]) && (
+                                                            <div className="text-[9px] text-gray-500 font-medium truncate leading-tight">
+                                                                {[room.units?.[nameIdx], room.titles?.[nameIdx]].filter(Boolean).join(' / ')}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
 
                                                 {/* 3. 房號錄 (依據飯店數量動態產出) */}

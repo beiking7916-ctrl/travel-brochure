@@ -125,12 +125,22 @@ export function PackingPage() {
                   <div key={i} className="flex flex-col gap-1">
                     <CheckboxItem label={item} />
                     {item === '其他：' && (
-                      <div className="space-y-3 mt-1 px-1">
-                        <div className="border-b border-gray-300 w-full h-[1px]" />
-                        <div className="border-b border-gray-300 w-full h-[1px]" />
-                        <div className="border-b border-gray-300 w-full h-[1px]" />
-                        <div className="border-b border-gray-300 w-full h-[1px]" />
-                      </div>
+                      <>
+                        {data.packingList && data.packingList.length > 0 ? (
+                          <div className="flex flex-col space-y-1 mt-1">
+                            {data.packingList.map((p, idx) => (
+                              <CheckboxItem key={idx} label={p.text} important={p.important} />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="space-y-3 mt-1 px-1">
+                            <div className="border-b border-gray-300 w-full h-[1px]" />
+                            <div className="border-b border-gray-300 w-full h-[1px]" />
+                            <div className="border-b border-gray-300 w-full h-[1px]" />
+                            <div className="border-b border-gray-300 w-full h-[1px]" />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -139,17 +149,7 @@ export function PackingPage() {
           </div>
         </div>
 
-        {/* 使用者新增的其餘項目 (如果有)，也用三欄呈現 */}
-        {data.packingList && data.packingList.length > 0 && (
-          <div className="mt-2">
-            <SectionTitle title="ADDITIONAL ITEMS" />
-            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-              {data.packingList.map((item, idx) => (
-                <CheckboxItem key={idx} label={item.text} important={item.important} />
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* 底部提醒事項 */}
         <div className="mt-auto space-y-1 pt-2 border-t border-gray-100">

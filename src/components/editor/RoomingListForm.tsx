@@ -12,6 +12,8 @@ export function RoomingListForm() {
             id: crypto.randomUUID(),
             roomNumber: ((data.roomingList?.length || 0) + 1).toString().slice(0, 5),
             names: ['', ''],
+            units: ['', ''],
+            titles: ['', ''],
             roomType: '雙人房',
             hotelName: '',
             hotelRooms: {},
@@ -40,6 +42,22 @@ export function RoomingListForm() {
         updateData({ roomingList: newList });
     };
 
+    const handleUpdateUnit = (roomIndex: number, nameIndex: number, value: string) => {
+        const newList = [...(data.roomingList || [])];
+        const newUnits = [...(newList[roomIndex].units || ['', ''])];
+        newUnits[nameIndex] = value;
+        newList[roomIndex] = { ...newList[roomIndex], units: newUnits };
+        updateData({ roomingList: newList });
+    };
+
+    const handleUpdateTitle = (roomIndex: number, nameIndex: number, value: string) => {
+        const newList = [...(data.roomingList || [])];
+        const newTitles = [...(newList[roomIndex].titles || ['', ''])];
+        newTitles[nameIndex] = value;
+        newList[roomIndex] = { ...newList[roomIndex], titles: newTitles };
+        updateData({ roomingList: newList });
+    };
+
     const handlePasteNames = () => {
         const input = prompt('請貼上名單（每行一位旅客姓名）：');
         if (!input) return;
@@ -57,6 +75,8 @@ export function RoomingListForm() {
                 id: crypto.randomUUID(),
                 roomNumber: (newRooms.length + 1).toString().slice(0, 5),
                 names: names,
+                units: Array(names.length).fill(''),
+                titles: Array(names.length).fill(''),
                 roomType: names.length === 1 ? '單人房' : '雙人房',
                 hotelName: data.hotels?.[0]?.name || '',
                 hotelRooms: {},
@@ -175,26 +195,37 @@ export function RoomingListForm() {
                                     )}
                                 </div>
                             </div>
-                            <div className="lg:col-span-4 space-y-1">
-                                <label className="block text-gray-400 text-[10px] font-bold uppercase">旅客姓名 (每位一欄)</label>
-                                <div className="space-y-2">
-                                    <input
-                                        type="text"
-                                        placeholder="姓名 1"
-                                        value={room.names[0] || ''}
-                                        onChange={(e) => handleUpdateName(index, 0, e.target.value)}
-                                        className="w-full text-base font-medium border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="姓名 2 (單人房可留空)"
-                                        value={room.names[1] || ''}
-                                        onChange={(e) => handleUpdateName(index, 1, e.target.value)}
-                                        className="w-full text-base font-medium border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                                    />
+                            <div className="lg:col-span-6 space-y-1">
+                                <label className="block text-gray-400 text-[10px] font-bold uppercase">旅客資訊 (姓名 / 單位 / 職稱)</label>
+                                <div className="space-y-3">
+                                    {[0, 1].map((nameIdx) => (
+                                        <div key={nameIdx} className="grid grid-cols-3 gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder={`姓名 ${nameIdx + 1}`}
+                                                value={room.names[nameIdx] || ''}
+                                                onChange={(e) => handleUpdateName(index, nameIdx, e.target.value)}
+                                                className="w-full text-sm font-medium border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="單位"
+                                                value={room.units?.[nameIdx] || ''}
+                                                onChange={(e) => handleUpdateUnit(index, nameIdx, e.target.value)}
+                                                className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="職稱"
+                                                value={room.titles?.[nameIdx] || ''}
+                                                onChange={(e) => handleUpdateTitle(index, nameIdx, e.target.value)}
+                                                className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="lg:col-span-5 space-y-1">
+                            <div className="lg:col-span-3 space-y-1">
                                 <label className="block text-gray-400 text-[10px] font-bold uppercase">備註</label>
                                 <textarea
                                     className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 min-h-[80px]"
