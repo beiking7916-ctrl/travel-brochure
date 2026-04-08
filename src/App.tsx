@@ -5,6 +5,8 @@ import { PreviewPanel } from './components/preview/PreviewPanel';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
+import { Management } from './components/Management';
+import { EBookView } from './components/preview/EBookView';
 import { auth } from './lib/auth';
 import { supabase } from './lib/supabase';
 import { storage } from './lib/storage';
@@ -49,19 +51,36 @@ function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackT
 }
 
 function App() {
-  const [view, setView] = useState<'login' | 'dashboard' | 'editor'>('login');
+  const [view, setView] = useState<'login' | 'dashboard' | 'editor' | 'management' | 'ebook'>('login');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<BrochureData | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      // 1. 檢查登入狀態 (非同步從 Supabase 取得 session)
+      // 1. 檢查登入狀態
       const currentUser = await auth.getCurrentUser();
       
       // 2. 處理網址參數
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = urlParams.get('id');
+      const mode = urlParams.get('mode');
+
+      // 電子書模式特殊處理 (不強制導向登入，但會檢查發佈狀態)
+      if (mode === 'ebook' && urlId) {
+        const cloudData = await storage.getBrochure(urlId);
+        if (cloudData) {
+          if (cloudData.isPublished || currentUser) { // 已發佈或已登入管理者皆可看
+            setInitialData(cloudData);
+            setCurrentId(urlId);
+            setView('ebook');
+            setLoading(false);
+            return;
+          } else {
+            alert('此手冊尚未發佈，無法線上閱讀。');
+          }
+        }
+      }
 
       // 如果未登入，強制導向登入頁面
       if (!currentUser) {
@@ -71,7 +90,7 @@ function App() {
       }
       
       // 如果已登入，且有 urlId，則載入該手冊進入 editor
-      if (urlId) {
+      if (urlId && mode !== 'ebook') {
         const cloudData = await storage.getBrochure(urlId);
         if (cloudData) {
           if (cloudData.isDeleted) {
@@ -122,6 +141,7 @@ function App() {
         await auth.logout();
         setView('login');
       }}
+      onGoToManagement={() => setView('management')}
       onSelectBrochure={async (id) => {
       setLoading(true);
       const loadedData = await storage.getBrochure(id);
@@ -138,6 +158,30 @@ function App() {
         alert('無法載入此手冊的詳細資料，可能尚未同步且本機無快取。');
       }
     }} />
+  }
+
+  if (view === 'management') {
+    return <Management 
+      onBack={() => setView('dashboard')}
+      onEdit={async (id) => {
+        setLoading(true);
+        const loadedData = await storage.getBrochure(id);
+        setLoading(false);
+        if (loadedData) {
+           setInitialData(loadedData);
+           setCurrentId(id);
+           setView('editor');
+        }
+      }}
+    />
+  }
+
+  if (view === 'ebook') {
+    return (
+      <BrochureProvider initialData={initialData}>
+        <EBookView />
+      </BrochureProvider>
+    );
   }
 
   return (

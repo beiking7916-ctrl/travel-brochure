@@ -1,30 +1,54 @@
 import { supabase } from './supabase';
+import type { User } from '../types';
+
+const CUSTOM_SESSION_KEY = 'travel_brochure_custom_user';
 
 export const auth = {
-    async login(email: string, password_plain: string): Promise<boolean> {
+    async login(identifier: string, password_plain: string): Promise<boolean> {
         if (!supabase) return false;
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
+            // 1. 優先嘗試自訂表格 (RPC + bcrypt)
+            const { data: rpcData, error: rpcError } = await supabase.rpc('check_user_password', {
+                p_employee_id: identifier,
+                p_password: password_plain
+            });
+
+            if (!rpcError && rpcData?.success) {
+                // 登入成功，儲存自訂 Session
+                localStorage.setItem(CUSTOM_SESSION_KEY, JSON.stringify(rpcData.user));
+                return true;
+            }
+
+            // 2. 若自訂表格失敗，回退嘗試 Supabase Auth (email)
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email: identifier,
                 password: password_plain
             });
 
-            if (error) {
-                console.error('Login failed:', error.message);
-                return false;
+            if (!authError) {
+                return true;
             }
 
-            return true;
+            console.error('Login failed both path:', rpcError?.message || authError?.message);
+            return false;
         } catch (err) {
             console.error('Auth error:', err);
             return false;
         }
     },
 
-    async getCurrentUser() {
+    async getCurrentUser(): Promise<User | any | null> {
         if (!supabase) return null;
+        
         try {
+            // 1. 檢查自訂 Session
+            const localUser = localStorage.getItem(CUSTOM_SESSION_KEY);
+            if (localUser) {
+                return JSON.parse(localUser);
+            }
+
+            // 2. 檢查 Supabase Auth
             const { data: { user } } = await supabase.auth.getUser();
             return user;
         } catch {
@@ -35,9 +59,10 @@ export const auth = {
     async logout() {
         if (!supabase) return;
         try {
+            localStorage.removeItem(CUSTOM_SESSION_KEY);
             await supabase.auth.signOut();
         } catch (err) {
             console.error('Logout error', err);
         }
     }
-};
+}

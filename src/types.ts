@@ -199,6 +199,33 @@ export interface BrochureData {
   fontFamily?: string; // 新增：字體選擇
   pageSettings?: Record<string, { fontSize?: number; imageScale?: number }>; // 新增：各頁面個別設定
   gridTipsSingle?: boolean; // 新增：貼心小叮嚀是否改用單一卡片模式
+  groupNumber?: string; // 新增：內部註記團號
+  isPublished?: boolean; // 新增：是否已發佈線上手冊
+}
+
+export interface User {
+  id: number;
+  employee_id: string;
+  name: string;
+  role: string;
+  is_active: boolean;
+  is_sales: boolean;
+  is_manager: boolean;
+  can_manage_users: boolean;
+  can_view_all_contracts: boolean;
+  email: string;
+  group_team?: string;
+  notify_email?: string;
+  permissions?: any;
+  name_en?: string;
+  job_title?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthSession {
+  user: User | null;
+  mode: 'custom' | 'supabase' | null;
 }
 
 export const defaultTheme: ThemeColors = {
@@ -380,6 +407,8 @@ export function createDefaultData(): BrochureData {
     contentFontSize: 14, // 預設 14px
     imageHeightScale: 1.0, // 預設 1.0
     fontFamily: "'Noto Sans TC', sans-serif", // 預設思源黑體
+    groupNumber: '', // 預設空白
+    isPublished: false, // 預設未發佈
   };
 }
 

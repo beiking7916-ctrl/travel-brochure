@@ -6,6 +6,8 @@ export interface BrochureMeta {
     id: string;
     title: string;
     agency?: string;
+    groupNumber?: string;
+    isPublished?: boolean;
     createdAt: string;
     updatedAt: string;
     isDeleted?: boolean;
@@ -22,7 +24,7 @@ export const storage = {
                 // 優化：僅抓取 Metadata，不抓取完整巨大的 data 物件
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, title:data->>title, agency:data->>agency, isDeleted:data->>isDeleted, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
@@ -35,6 +37,8 @@ export const storage = {
                             id: item.id,
                             title: item.title || '未命名手冊',
                             agency: item.agency || '',
+                            groupNumber: item.groupNumber || '',
+                            isPublished: item.isPublished === 'true' || item.isPublished === true,
                             createdAt: item.created_at,
                             updatedAt: item.updated_at,
                             isDeleted: false
@@ -123,14 +127,18 @@ export const storage = {
 
         const title = data.title || '未命名手冊';
         const agency = data.agency || '';
+        const groupNumber = data.groupNumber || '';
+        const isPublished = !!data.isPublished;
 
         if (existingIndex >= 0) {
-            list[existingIndex] = { ...list[existingIndex], title, agency, updatedAt: now };
+            list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, updatedAt: now };
         } else {
             list.unshift({
                 id,
                 title,
                 agency,
+                groupNumber,
+                isPublished,
                 createdAt: now,
                 updatedAt: now,
             });

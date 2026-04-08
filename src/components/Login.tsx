@@ -53,19 +53,19 @@ export function Login({ onLoginSuccess }: LoginProps) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                電子信箱
+                                員工編號 / 電子信箱
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Mail className="text-gray-400" size={18} />
                                 </div>
                                 <input
-                                    type="email"
+                                    type="text"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    placeholder="例如: admin@agency.com"
+                                    placeholder="例如: jollifyadmin 或 admin@agency.com"
                                 />
                             </div>
                         </div>

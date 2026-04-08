@@ -181,6 +181,22 @@ export function BasicInfoForm() {
           />
         </div>
 
+        <div>
+           <label className={labelClassName}>
+             <span className="flex items-center gap-1.5">
+               內部註記團號
+               <span className="text-[10px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded border border-gray-200 font-normal">僅供內部對帳/管理使用</span>
+             </span>
+           </label>
+           <input
+             type="text"
+             value={data.groupNumber || ''}
+             onChange={(e) => updateData({ groupNumber: e.target.value })}
+             className={inputClassName}
+             placeholder="例如：BKI0702-20240501"
+           />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClassName}>旅遊副標題</label>

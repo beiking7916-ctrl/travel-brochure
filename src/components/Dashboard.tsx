@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage, BrochureMeta } from '../lib/storage';
-import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive } from 'lucide-react';
+import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/auth';
 import type { BrochureData } from '../types';
@@ -8,9 +8,10 @@ import type { BrochureData } from '../types';
 interface DashboardProps {
     onSelectBrochure: (id: string) => void;
     onLogout: () => void;
+    onGoToManagement: () => void;
 }
 
-export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
+export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: DashboardProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
 
@@ -106,6 +107,15 @@ export function Dashboard({ onSelectBrochure, onLogout }: DashboardProps) {
                     >
                         <LogOut size={18} />
                         <span className="hidden sm:inline">登出</span>
+                    </button>
+                    <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                    <button
+                        onClick={onGoToManagement}
+                        className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 font-medium rounded-lg transition-colors border border-transparent"
+                        title="發佈管理頁面"
+                    >
+                        <Globe size={18} />
+                        <span className="hidden sm:inline">發佈管理</span>
                     </button>
                     <div className="w-px h-6 bg-gray-300 mx-2"></div>
                     <button
