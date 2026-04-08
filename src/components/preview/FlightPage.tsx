@@ -34,19 +34,26 @@ export function FlightPage() {
   };
 
   // 緊湊型航班卡片
-  const FlightCard = ({ flight, index }: { flight: FlightInfo; index: number }) => {
+  const FlightCard = ({ flight }: { flight: FlightInfo; index: number }) => {
     return (
       <div className="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-2 last:mb-0">
         <div className="flex items-stretch min-h-[60px]">
           <div className="flex-grow p-2 flex flex-col justify-center">
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5">
-                {flight.airlineLogo && <img src={flight.airlineLogo} alt="" className="h-3 object-contain" />}
-                <span className="text-xs font-bold text-gray-800">{flight.airline}</span>
-                <span className="text-xs bg-gray-100 px-1 py-0.5 rounded text-gray-500 font-bold">{flight.flightNumber}</span>
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                {flight.airlineLogo && (
+                  <img 
+                    src={flight.airlineLogo} 
+                    alt="" 
+                    className="object-contain" 
+                    style={{ height: 'calc(0.85rem * var(--image-height-scale, 1.0))' }}
+                  />
+                )}
+                <span className="dynamic-text font-bold text-gray-800 truncate">{flight.airline}</span>
+                <span className="text-[10px] bg-gray-100 px-1 py-0.5 rounded text-gray-500 font-bold whitespace-nowrap">{flight.flightNumber}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-600">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="dynamic-text font-bold text-gray-600 scale-90 origin-right">
                   {flight.date ? (
                     flight.arrivalNextDay ? (
                       <>
@@ -59,40 +66,40 @@ export function FlightPage() {
                         })()}
                       </>
                     ) : formatDate(flight.date)
-                  ) : '日期待確認'}
+                  ) : '待確認'}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col items-start w-[80px]">
-                <span className="text-base font-black text-gray-900 leading-none">{flight.departureTime || '--:--'}</span>
-                <span className="text-xs font-bold text-gray-600 truncate w-full">{flight.departurePlace || '待確認'}</span>
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="flex flex-col items-start w-[70px] flex-shrink-0">
+                <span className="dynamic-text text-lg font-black text-gray-900 leading-none">{flight.departureTime || '--:--'}</span>
+                <span className="dynamic-text text-xs font-bold text-gray-600 truncate w-full">{flight.departurePlace || '待確認'}</span>
               </div>
 
-              <div className="flex-grow flex flex-col items-center justify-center relative">
+              <div className="flex-grow flex flex-col items-center justify-center relative px-2">
                 {flight.flightDuration && (
-                  <div className="absolute -top-5 text-[14px] font-bold text-blue-600 uppercase tracking-tighter">
+                  <div className="absolute -top-4 text-[11px] font-bold text-blue-600 uppercase tracking-tighter whitespace-nowrap bg-white px-1">
                     {flight.flightDuration}
                   </div>
                 )}
-                <div className="w-full flex items-center gap-2 opacity-30">
-                  <div className="h-[3px] flex-grow bg-gray-400" />
-                  <Plane size={14} className="rotate-45" />
-                  <div className="h-[3px] flex-grow bg-gray-400" />
+                <div className="w-full flex items-center gap-1.5 opacity-30">
+                  <div className="h-[2px] flex-grow bg-gray-400" />
+                  <Plane size={12} className="rotate-45 flex-shrink-0" />
+                  <div className="h-[2px] flex-grow bg-gray-400" />
                 </div>
               </div>
 
-              <div className="flex flex-col items-end w-[90px]">
+              <div className="flex flex-col items-end w-[80px] flex-shrink-0">
                 <div className="flex items-start gap-0.5">
-                  <span className="text-base font-black text-gray-900 leading-none">{flight.arrivalTime || '--:--'}</span>
+                  <span className="dynamic-text text-lg font-black text-gray-900 leading-none">{flight.arrivalTime || '--:--'}</span>
                   {flight.arrivalNextDay && <span className="text-[10px] font-black text-orange-500 mt-[-2px]">+1</span>}
                 </div>
-                <span className="text-xs font-bold text-gray-600 truncate w-full text-right">{flight.arrivalPlace || '待確認'}</span>
+                <span className="dynamic-text text-xs font-bold text-gray-600 truncate w-full text-right">{flight.arrivalPlace || '待確認'}</span>
               </div>
             </div>
             {flight.duration && (
-              <div className="mt-1 text-xs text-gray-400 font-medium italic">
+              <div className="mt-1.5 text-[10px] text-gray-400 font-medium italic border-t border-gray-50 pt-1">
                 Note: {flight.duration}
               </div>
             )}
@@ -106,7 +113,7 @@ export function FlightPage() {
     <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
       <div className="flex items-center gap-2 mb-1.5">
         <Users size={14} style={{ color: data.theme.primary }} />
-        <h3 className="font-bold text-base tracking-tight" style={{ color: data.theme.primary }}>集合資訊 & 聯絡方式</h3>
+        <h3 className="dynamic-text font-bold text-base tracking-tight" style={{ color: data.theme.primary }}>集合資訊 & 聯絡方式</h3>
       </div>
 
       <div className="space-y-1">
@@ -122,7 +129,7 @@ export function FlightPage() {
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0 flex items-center gap-1">
               <Clock size={10} /> 集合時間
             </p>
-            <p className="text-lg font-black leading-none" style={{ color: data.theme.primary }}>{data.meetingTime || '--:--'}</p>
+            <p className="dynamic-text text-lg font-black leading-none" style={{ color: data.theme.primary }}>{data.meetingTime || '--:--'}</p>
           </div>
         </div>
 
@@ -152,7 +159,7 @@ export function FlightPage() {
             {/* 第二列：旅行社 與 緊急聯繫人 */}
             <div className="space-y-0.5">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">緊急聯繫人</p>
-              <p className="text-xs font-black text-gray-900 leading-none">
+              <p className="dynamic-text text-xs font-black text-gray-900 leading-none">
                 {data.emergencyContactName || '值班人員'}
               </p>
             </div>

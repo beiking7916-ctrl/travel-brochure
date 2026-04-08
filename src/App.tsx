@@ -120,14 +120,17 @@ function App() {
       if (mode === 'ebook' && urlId) {
         const cloudData = await storage.getBrochure(urlId);
         if (cloudData) {
-          if (cloudData.isPublished || currentUser) { // 已發佈或已登入管理者皆可看
+          // 檢查是否已過期 (下架)
+          const isExpired = cloudData.expiresAt && new Date(cloudData.expiresAt).getTime() < new Date().setHours(0,0,0,0);
+          
+          if ((cloudData.isPublished && !isExpired) || currentUser) { // 已發佈且未過期，或已登入管理者皆可看
             setInitialData(cloudData);
             setCurrentId(urlId);
             setView('ebook');
             setLoading(false);
             return;
           } else {
-            alert('此手冊尚未發佈，無法線上閱讀。');
+            alert(isExpired ? '此手冊已過期下架。' : '此手冊尚未發佈，無法線上閱讀。');
           }
         }
       }

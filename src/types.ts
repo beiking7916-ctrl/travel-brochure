@@ -201,6 +201,10 @@ export interface BrochureData {
   gridTipsSingle?: boolean; // 新增：貼心小叮嚀是否改用單一卡片模式
   groupNumber?: string; // 新增：內部註記團號
   isPublished?: boolean; // 新增：是否已發佈線上手冊
+  publishedAt?: string; // 新增：發佈時間
+  expiresAt?: string; // 新增：下架時間
+  publishHistory?: { timestamp: string; action: 'publish' | 'unpublish'; user?: string }[]; // 新增：發佈紀錄
+  version?: number; // 新增：版本號
 }
 
 export interface User {

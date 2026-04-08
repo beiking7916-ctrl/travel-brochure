@@ -1,5 +1,8 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, createContext, useContext } from 'react';
 import { useBrochure } from '../../context/BrochureContext';
+
+// 新增 Context 以便從外部控制所有 PageWrapper 的方位
+export const PageSideContext = createContext<'left' | 'right'>('right');
 
 interface PageWrapperProps {
     children: ReactNode;
@@ -8,22 +11,29 @@ interface PageWrapperProps {
     hideHeaderFooter?: boolean;
     className?: string;
     sectionId?: string;
+    pageSide?: 'left' | 'right'; // 保留屬性，優先權高於 Context
 }
 
-export function PageWrapper({ children, title, icon, hideHeaderFooter = false, className = '', sectionId }: PageWrapperProps) {
+export function PageWrapper({ children, title, icon, hideHeaderFooter = false, className = '', sectionId, pageSide }: PageWrapperProps) {
     const { data } = useBrochure();
+    const contextSide = useContext(PageSideContext);
+    
+    // 優先順序：Progs > Context > 預設值 ('right')
+    const finalSide = pageSide || contextSide || 'right';
 
     // 取得當前頁面專屬設定，若無則用全域設定
     const specificSettings = sectionId ? data.pageSettings?.[sectionId] : undefined;
     const currentFontSize = specificSettings?.fontSize || data.contentFontSize || 14;
     const currentImageScale = specificSettings?.imageScale || data.imageHeightScale || 1.0;
 
+    const sideClass = finalSide === 'left' ? 'page-left' : 'page-right';
+
     if (hideHeaderFooter) {
         return (
             <div
-                className={`a5-page p-6 flex flex-col relative ${className}`}
-                style={{ 
-                    backgroundColor: data.theme.secondary, 
+                className={`a5-page ${sideClass} p-6 flex flex-col relative ${className}`}
+                style={{
+                    backgroundColor: data.theme.secondary,
                     color: data.theme.text,
                     '--content-font-size': `${currentFontSize}px`,
                     '--image-height-scale': currentImageScale,
@@ -38,41 +48,31 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
     const customHeaderText = data.headerText || data.agency || '';
     const headerTitle = title || '';
 
-    // 雙數頁 (實際偶數頁，DOM 為 odd，靠左)：LOGO 企業名稱 - 單元名稱
-    const leftAlignedString = customHeaderText
-        ? (headerTitle ? `${customHeaderText} - ${headerTitle}` : customHeaderText)
-        : (headerTitle || '旅遊手冊');
-
-    // 單數頁 (實際奇數頁，DOM 為 even，靠右)：單元名稱 - 企業名稱 LOGO
-    const rightAlignedString = customHeaderText
-        ? (headerTitle ? `${headerTitle} - ${customHeaderText}` : customHeaderText)
-        : (headerTitle || '旅遊手冊');
-
     return (
         <div
-            className={`a5-page relative overflow-hidden flex flex-col pt-12 pb-12 px-6 ${className}`}
-            style={{ 
-                backgroundColor: data.theme.secondary, 
+            className={`a5-page ${sideClass} relative overflow-hidden flex flex-col pt-12 pb-12 px-6 ${className}`}
+            style={{
+                backgroundColor: data.theme.secondary,
                 color: data.theme.text,
                 '--content-font-size': `${currentFontSize}px`,
                 '--image-height-scale': currentImageScale,
                 'fontFamily': data.fontFamily || "'Noto Sans TC', sans-serif"
             } as React.CSSProperties}
         >
-            {/* 頁首 (由 CSS nth-of-type flex-direction 控制左右排列) */}
+            {/* 頁首 (由 CSS .page-left/.page-right 控制 flex-direction) */}
             <div
                 className="absolute top-6 left-6 right-6 flex page-header text-xs font-semibold opacity-50 gap-2 items-center"
                 style={{ color: data.theme.primary }}
             >
-                {/* 如果有客戶 Logo (頁首專屬 Logo) 且使用者希望在頁首顯示，可在此處渲染 */}
+                {/* 統一渲染：方位的 order 由 CSS 控制 */}
                 {data.headerLogo && (
                     <img src={data.headerLogo} alt="Header Logo" className="h-4 object-contain" />
                 )}
                 <div className="flex gap-2">
-                    {/* DOM 的奇數(實際偶數頁) 置左 -> 顯示 LOGO 企業名稱 - 單元名稱 */}
-                    <span className="hidden [.a5-page:nth-of-type(odd):not(.cover-page)_&]:inline">{leftAlignedString}</span>
-                    {/* DOM 的偶數(實際奇數頁) 置右 -> 顯示 單元名稱 - 企業名稱 LOGO */}
-                    <span className="hidden [.a5-page:nth-of-type(even)_&]:inline">{rightAlignedString}</span>
+                    {/* 直接渲染兩者，CSS 會幫我們排好順序與對齊方向 */}
+                    {customHeaderText && <span>{customHeaderText}</span>}
+                    {customHeaderText && headerTitle && <span>-</span>}
+                    {headerTitle && <span>{headerTitle}</span>}
                 </div>
             </div>
 

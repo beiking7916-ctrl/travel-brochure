@@ -16,12 +16,13 @@ import { NotesPage } from './NotesPage';
 import { RoomingListPage } from './RoomingListPage';
 import { CustomPage } from './CustomPage';
 import { BackCoverPage } from './BackCoverPage';
+import { PageSideContext } from './PageWrapper';
 import type { SectionId } from '../../types';
 
 export function PreviewPanel() {
   const { data } = useBrochure();
 
-  // 雙重保險：如果 Context 沒補齊，這裡再次補齊，確保分房與自訂頁面一定會顯示
+  // ... (原本的 ALL_SECTION_IDS, currentOrder, visibleSections 邏輯保持不變)
   const ALL_SECTION_IDS: SectionId[] = [
     'flight', 'attraction', 'hotel', 'hotelDetail', 'roomingList', 'map', 'itinerary', 'packing', 'tips', 'gridTips', 'customPage'
   ];
@@ -48,33 +49,29 @@ export function PreviewPanel() {
     customPage: '自訂',
   };
 
-  const renderSection = (sectionId: SectionId) => {
-    switch (sectionId) {
-      case 'flight':
-        return <FlightPage key="flight" />;
-      case 'attraction':
-        return <AttractionPage key="attraction" />;
-      case 'hotel':
-        return <HotelPage key="hotel" />;
-      case 'hotelDetail':
-        return <HotelDetailPage key="hotelDetail" />;
-      case 'roomingList':
-        return <RoomingListPage key="roomingList" />;
-      case 'map':
-        return <MapPage key="map" />;
-      case 'itinerary':
-        return <ItineraryPage key="itinerary" />;
-      case 'packing':
-        return <PackingPage key="packing" />;
-      case 'tips':
-        return <TipsPage key="tips" />;
-      case 'gridTips':
-        return <TipsGridPage key="gridTips" />;
-      case 'customPage':
-        return <CustomPage key="customPage" />;
-      default:
-        return null;
-    }
+  const renderSection = (sectionId: SectionId, pageIndex: number) => {
+    const side = pageIndex % 2 === 0 ? 'right' : 'left'; // 0=Page1(Right), 1=Page2(Left)
+    
+    return (
+      <PageSideContext.Provider value={side} key={sectionId}>
+        {(() => {
+          switch (sectionId) {
+            case 'flight': return <FlightPage />;
+            case 'attraction': return <AttractionPage />;
+            case 'hotel': return <HotelPage />;
+            case 'hotelDetail': return <HotelDetailPage />;
+            case 'roomingList': return <RoomingListPage />;
+            case 'map': return <MapPage />;
+            case 'itinerary': return <ItineraryPage />;
+            case 'packing': return <PackingPage />;
+            case 'tips': return <TipsPage />;
+            case 'gridTips': return <TipsGridPage />;
+            case 'customPage': return <CustomPage />;
+            default: return null;
+          }
+        })()}
+      </PageSideContext.Provider>
+    );
   };
 
   // 過濾掉使用者在目錄設定中取消勾選的頁面
@@ -97,6 +94,35 @@ export function PreviewPanel() {
       </div>
     </div>
   );
+
+  // 統一計算頁面列表
+  // 1=Cover, 2=TOC, 3...=visibleSections, ...=Notes, last=BackCover
+  const pages = [
+    { id: 'cover', title: 'Cover Page', component: (side: 'left'|'right') => <PageSideContext.Provider value={side}><CoverPage /></PageSideContext.Provider> },
+    { id: 'toc', title: 'Table of Contents', component: (side: 'left'|'right') => <PageSideContext.Provider value={side}><TOCPage /></PageSideContext.Provider> },
+    ...visibleSections.map((id, index) => ({
+      id,
+      title: `${id.charAt(0).toUpperCase() + id.slice(1)} Page`,
+      component: (side: 'left'|'right') => renderSection(id as SectionId, index + 2) // Index + 2 因為前面有 Cover(0) 跟 TOC(1)
+    })),
+    ...Array.from({ length: data.notesCount || 0 }).map((_, i) => {
+      const globalIndex = 2 + visibleSections.length + i;
+      return {
+        id: `note-${i}`,
+        title: `Note Page ${i + 1}`,
+        component: (side: 'left'|'right') => (
+          <PageSideContext.Provider value={side}>
+            <NotesPage totalNotes={data.notesCount} />
+          </PageSideContext.Provider>
+        )
+      };
+    }),
+    { 
+      id: 'back-cover', 
+      title: 'Back Cover Page', 
+      component: (side: 'left'|'right') => <PageSideContext.Provider value={side}><BackCoverPage /></PageSideContext.Provider> 
+    }
+  ];
 
   return (
     <div className="relative h-full overflow-hidden bg-[#ccd5e0]">
@@ -133,49 +159,29 @@ export function PreviewPanel() {
       {/* 螢幕預覽容器（列印時隱藏） */}
       <div className="h-full overflow-y-auto pt-20 p-12 custom-scrollbar no-print">
         <div className="preview-container flex flex-col items-center gap-16 pb-32">
-          <PageContainer id="cover" title="Cover Page">
-            <CoverPage />
-          </PageContainer>
-
-          <PageContainer id="toc" title="Table of Contents">
-            <TOCPage />
-          </PageContainer>
-
-          {visibleSections.map((sectionId) => (
-            <PageContainer key={sectionId} id={sectionId} title={`${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)} Page`}>
-              {renderSection(sectionId)}
+          {pages.map((page, index) => (
+            <PageContainer key={page.id} id={page.id} title={page.title}>
+              {page.component(index % 2 === 0 ? 'right' : 'left')}
             </PageContainer>
           ))}
-
-          {/* 筆記頁 (不顯示在目錄，但顯示在最後面) */}
-          {Array.from({ length: data.notesCount || 0 }).map((_, i) => (
-            <PageContainer key={`note-${i}`} id={`note-${i}`} title={`Note Page ${i + 1}`}>
-              <NotesPage totalNotes={data.notesCount} />
-            </PageContainer>
-          ))}
-
-          <PageContainer id="back-cover" title="Back Cover Page">
-            <BackCoverPage />
-          </PageContainer>
         </div>
       </div>
 
       {/* 列印專用容器（透過 Portal 掛到 body，脫離 w-3/5 容器限制） */}
       {ReactDOM.createPortal(
         <div className="print-only-container">
-          {/* A4 封面+封底跨頁列印 (第一頁) */}
+          {/* A4 封面+封底跨頁列印 (不計入方點，固定左封底右封面) */}
           <div className="a4-landscape-page print-a4-landscape">
-            <BackCoverPage />
-            <CoverPage />
+            <PageSideContext.Provider value="left"><BackCoverPage /></PageSideContext.Provider>
+            <PageSideContext.Provider value="right"><CoverPage /></PageSideContext.Provider>
           </div>
 
-          <CoverPage />
-          <TOCPage />
-          {visibleSections.map((sectionId) => renderSection(sectionId))}
-          {Array.from({ length: data.notesCount || 0 }).map((_, i) => (
-            <NotesPage key={`print-note-${i}`} totalNotes={data.notesCount} />
+          {/* 正常的頁面列表 */}
+          {pages.map((page, index) => (
+            <React.Fragment key={`print-${page.id}`}>
+              {page.component(index % 2 === 0 ? 'right' : 'left')}
+            </React.Fragment>
           ))}
-          <BackCoverPage />
         </div>,
         document.body
       )}

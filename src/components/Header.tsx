@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Printer, Download, Upload, CloudUpload, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Printer, Download, Upload, CloudUpload, ArrowLeft, CheckCircle2, Globe } from 'lucide-react';
 import { useBrochure } from '../context/BrochureContext';
+import { PublishModal } from './PublishModal';
 import type { BrochureData } from '../types';
 // 移除大量渲染套件，改用原生列印以最佳化效能
 import { supabase } from '../lib/supabase';
@@ -26,6 +27,7 @@ export function Header({
 
     // Status Log State
     const [isLogOpen, setIsLogOpen] = useState(false);
+    const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
     const [logTitle, setLogTitle] = useState('');
     const [logs, setLogs] = useState<LogEntry[]>([]);
 
@@ -33,11 +35,22 @@ export function Header({
         setLogs(prev => [...prev, { id: crypto.randomUUID(), message, level, timestamp: new Date() }]);
     };
 
-    const handleSaveToCloud = async () => {
+    const [isConfirmingSave, setIsConfirmingSave] = useState(false);
+
+    const handleSaveToCloud = () => {
         if (!supabase) {
             alert('系統尚未連接至雲端資料庫');
             return;
         }
+        setLogTitle('同步至雲端');
+        setLogs([]);
+        setIsConfirmingSave(true);
+        setIsLogOpen(true);
+    };
+
+    const startCloudSaveSync = async () => {
+        setIsConfirmingSave(false);
+        setIsSavingCloud(true);
 
         const urlParams = new URLSearchParams(window.location.search);
         const existingId = currentId || urlParams.get('id');
@@ -47,15 +60,8 @@ export function Header({
             return;
         }
 
-        setLogTitle('同步至雲端');
-        setLogs([]);
-        setIsLogOpen(true);
-        setIsSavingCloud(true);
-
         try {
             const dataToSave = { ...data };
-            // 統一使用 storage.saveBrochure，這會自動處理：
-            // 1. 本地快取 2. 雲端 Upsert 3. 最後修改人紀錄 4. 修改歷程 Log
             const result = await storage.saveBrochure(existingId, dataToSave);
 
             if (result.success) {
@@ -288,6 +294,18 @@ export function Header({
                 </button>
 
                 <button
+                    onClick={() => setIsPublishModalOpen(true)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all ml-1 hover:opacity-90 active:scale-95 ${
+                        data.isPublished 
+                        ? 'bg-green-600 text-white shadow-lg shadow-green-200 animate-pulse' 
+                        : 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                    }`}
+                >
+                    <Globe size={18} />
+                    {data.isPublished ? '已發佈' : '發佈'}
+                </button>
+
+                <button
                     onClick={handlePrint}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-opacity ml-1 hover:opacity-90 active:scale-95"
                     style={{ backgroundColor: '#1e3a5f' }}
@@ -301,7 +319,16 @@ export function Header({
                 title={logTitle}
                 logs={logs}
                 isProcessing={isGeneratingPDF || isSavingCloud}
-                onClose={() => setIsLogOpen(false)}
+                isConfirming={isConfirmingSave}
+                onConfirm={startCloudSaveSync}
+                onClose={() => {
+                    setIsLogOpen(false);
+                    setIsConfirmingSave(false);
+                }}
+            />
+            <PublishModal 
+                isOpen={isPublishModalOpen} 
+                onClose={() => setIsPublishModalOpen(false)} 
             />
         </header>
     );

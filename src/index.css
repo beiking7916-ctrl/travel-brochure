@@ -99,12 +99,13 @@ body {
 /* 因為封面是第一個元素，導致後續頁面的 DOM 索引 +1
    DOM 偶數(even) = 實際第1(目錄), 3, 5頁 (奇數頁) -> 頁首置右 (row-reverse)
    DOM 奇數(odd) = 實際第2, 4, 6頁 (偶數頁) -> 頁首置左 (row) */
-.a5-page:nth-of-type(even) .page-header {
-  flex-direction: row-reverse;
+/* 頁首奇偶數頁不同：左頁(偶數)靠左，右頁(奇數)靠右 */
+.a5-page.page-left .page-header {
+  flex-direction: row;
 }
 
-.a5-page:nth-of-type(odd):not(.cover-page) .page-header {
-  flex-direction: row;
+.a5-page.page-right:not(.cover-page) .page-header {
+  flex-direction: row-reverse;
 }
 
 /* 最後一頁不需要再換頁 */
@@ -171,7 +172,6 @@ body {
     image-rendering: high-quality !important;
     -ms-interpolation-mode: bicubic !important;
     max-width: 100% !important;
-    height: auto !important;
     /* 避免圖層混合導致的模糊 */
     will-change: auto !important;
   }

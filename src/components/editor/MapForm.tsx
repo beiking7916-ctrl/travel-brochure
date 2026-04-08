@@ -21,6 +21,25 @@ export function MapForm() {
         }
     }, [data.mapPage, updateData]);
 
+    const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image/') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    try {
+                        const compressed = await compressImage(file);
+                        updateData({ mapPage: { src: compressed, fit: data.mapPage?.fit || 'cover' } });
+                    } catch (err) {
+                        console.error('貼上圖片壓縮失敗', err);
+                    }
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }
+    }, [data.mapPage, updateData]);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
@@ -58,6 +77,8 @@ export function MapForm() {
             {!data.mapPage ? (
                 <div
                     {...getRootProps()}
+                    onPaste={handlePaste}
+                    tabIndex={0}
                     className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[300px] outline-none ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                         }`}
                 >
@@ -65,7 +86,7 @@ export function MapForm() {
                     <div className="bg-blue-50 p-4 rounded-full mb-4">
                         <ImagePlus className="text-blue-500" size={32} />
                     </div>
-                    <p className="font-bold text-gray-700">點擊或拖曳上傳行程地圖</p>
+                    <p className="font-bold text-gray-700">點擊、拖曳或 <kbd className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-xs">Ctrl+V</kbd> 貼上圖片</p>
                     <p className="text-sm text-gray-400 mt-1">建議解析度 1200x1700 以上</p>
                 </div>
             ) : (

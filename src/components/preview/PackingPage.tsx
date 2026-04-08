@@ -26,7 +26,7 @@ export function PackingPage() {
     },
     {
       title: 'ELECTRONICS',
-      items: ['手機 / 國際電話卡', '網卡 / Wifi分享器', '手機充電器', '行動電源', '耳機', '萬用插頭', '相機及其充電器', '相機記憶卡、備用電池', '自拍棒、腳架', '筆電 / 平板及其充電器']
+      items: ['手機 ', '網路卡 / Wifi分享器', '手機充電器', '行動電源', '耳機', '萬用插頭', '相機及其充電器', '相機記憶卡、備用電池', '自拍棒、腳架', '筆電 / 平板及其充電器']
     },
     {
       title: 'TOILETRIES',
@@ -45,7 +45,7 @@ export function PackingPage() {
       </div>
       <span className={`dynamic-text font-medium whitespace-nowrap leading-none ${important ? 'text-amber-700 font-bold flex items-center gap-1' : 'text-gray-700'}`}>
         {label}
-        {important && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 rounded-sm leading-none py-0.5 border border-amber-200 uppercase tracking-tighter">Urgent</span>}
+        {important && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 rounded-sm leading-none py-0.5 border border-amber-200 uppercase tracking-tighter">重要</span>}
       </span>
     </div>
   );

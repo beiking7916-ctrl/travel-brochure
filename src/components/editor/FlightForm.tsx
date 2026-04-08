@@ -164,6 +164,20 @@ function SegmentEditor({
     if (acceptedFiles[0]) handleLogoUpload(index, acceptedFiles[0]);
   }, [index, handleLogoUpload]);
 
+  const handleLogoPaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image/') !== -1) {
+            const file = items[i].getAsFile();
+            if (file) {
+                handleLogoUpload(index, file);
+                e.preventDefault();
+                break;
+            }
+        }
+    }
+  }, [index, handleLogoUpload]);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
@@ -200,13 +214,18 @@ function SegmentEditor({
             <label className={labelClassName}>航空公司 Logo</label>
             <div
               {...getRootProps()}
-              className={`relative h-20 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+              onPaste={handleLogoPaste}
+              tabIndex={0}
+              className={`relative h-20 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden outline-none focus:border-blue-300 focus:bg-blue-50/30 ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
             >
               <input {...getInputProps()} />
               {flight.airlineLogo ? (
                 <img src={flight.airlineLogo} alt="Logo" className="w-full h-full object-contain p-2" />
               ) : (
-                <ImagePlus className="text-gray-300" size={20} />
+                <div className="flex flex-col items-center">
+                  <ImagePlus className="text-gray-300" size={20} />
+                  <span className="text-[9px] text-gray-300 mt-1 font-bold">Paste</span>
+                </div>
               )}
             </div>
           </div>
