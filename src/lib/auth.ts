@@ -14,6 +14,8 @@ export const auth = {
                 p_password: password_plain
             });
 
+            console.log('RPC Login Result:', { rpcData, rpcError });
+
             if (!rpcError && rpcData?.success) {
                 // 登入成功，儲存自訂 Session
                 localStorage.setItem(CUSTOM_SESSION_KEY, JSON.stringify(rpcData.user));
@@ -40,7 +42,7 @@ export const auth = {
 
     async getCurrentUser(): Promise<User | any | null> {
         if (!supabase) return null;
-        
+
         try {
             // 1. 檢查自訂 Session
             const localUser = localStorage.getItem(CUSTOM_SESSION_KEY);
