@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storage, BrochureMeta } from '../lib/storage';
 import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive, Globe } from 'lucide-react';
+import { HistoryModal } from './HistoryModal';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/auth';
 import type { BrochureData } from '../types';
@@ -14,10 +15,16 @@ interface DashboardProps {
 export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: DashboardProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
+    
+    // History Modal State
+    const [historyModal, setHistoryModal] = useState<{ isOpen: boolean; title: string; logs: any[] }>({
+        isOpen: false,
+        title: '',
+        logs: []
+    });
 
     const loadList = async () => {
         const list = await storage.getList();
-        // storage.getList 內部已經處理過雲端優先與 isDeleted 過濾
         setBrochures(list);
     };
 
@@ -40,7 +47,6 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
     const handleDuplicate = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
 
-        // 如果是從雲端複製，我們需要先拿到最新資料
         let dataToDuplicate: BrochureData | null = null;
         if (supabase) {
             const { data } = await supabase.from('brochures').select('data').eq('id', id).single();
@@ -49,7 +55,6 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
             }
         }
 
-        // 如果雲端拿不到，再從本地拿
         if (!dataToDuplicate) {
             dataToDuplicate = await storage.getBrochure(id);
         }
@@ -62,7 +67,7 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
             title: `${dataToDuplicate.title} (複製)`,
         };
         await storage.saveBrochure(newId, duplicatedData);
-        await loadList(); // 重新載入列表
+        await loadList();
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -79,6 +84,16 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
             await storage.invalidateBrochure(id);
             await loadList();
         }
+    };
+
+    const handleViewHistory = async (e: React.MouseEvent, id: string, title: string) => {
+        e.stopPropagation();
+        const logs = await storage.getLogs(id);
+        setHistoryModal({
+            isOpen: true,
+            title: title || '未命名手冊',
+            logs: logs
+        });
     };
 
     const formatDate = (dateString: string) => {
@@ -166,13 +181,20 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                     <div
                                         key={meta.id}
                                         onClick={() => onSelectBrochure(meta.id)}
-                                        className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden flex flex-col h-48"
+                                        className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden flex flex-col h-56"
                                     >
                                         <div className="flex-1 p-5">
                                             <div className="flex items-start justify-between mb-3">
                                                 <h3 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2">
                                                     {meta.title}
                                                 </h3>
+                                                <button
+                                                    onClick={(e) => handleViewHistory(e, meta.id, meta.title)}
+                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors ml-2 flex-shrink-0"
+                                                    title="查看修改歷程"
+                                                >
+                                                    <Calendar size={18} />
+                                                </button>
                                             </div>
                                             <p className="text-sm text-gray-500 line-clamp-1 mb-4">
                                                 {meta.agency || '未設定旅行社'}
@@ -183,6 +205,11 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                     <Calendar size={12} />
                                                     更新：{formatDate(meta.updatedAt)}
                                                 </div>
+                                                {meta.lastModifiedBy && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-blue-500 font-medium border-t border-gray-100 pt-1.5 mt-1">
+                                                        最後修改：{meta.lastModifiedBy}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -194,24 +221,24 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                 <Copy size={16} />
                                                 複製
                                             </button>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={(e) => handleInvalidate(e, meta.id)}
-                                                        className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors p-1 hover:bg-amber-50 rounded"
-                                                        title="作廢手冊"
-                                                    >
-                                                        <Archive size={16} />
-                                                        <span className="hidden lg:inline text-xs">作廢</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleDelete(e, meta.id)}
-                                                        className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded"
-                                                        title="永久刪除"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => handleInvalidate(e, meta.id)}
+                                                    className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors p-1 hover:bg-amber-50 rounded"
+                                                    title="作廢手冊"
+                                                >
+                                                    <Archive size={16} />
+                                                    <span className="hidden lg:inline text-xs">作廢</span>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(e, meta.id)}
+                                                    className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded"
+                                                    title="永久刪除"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -219,6 +246,13 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                     )}
                 </div>
             </main>
+
+            <HistoryModal 
+                isOpen={historyModal.isOpen}
+                onClose={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
+                title={historyModal.title}
+                logs={historyModal.logs}
+            />
         </div>
     );
 }

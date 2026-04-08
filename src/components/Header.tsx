@@ -10,11 +10,13 @@ import { StatusLogModal, LogEntry, LogLevel } from './StatusLogModal';
 export function Header({
     currentId,
     onBackToDashboard,
-    saveStatus
+    saveStatus,
+    onlineUsers = []
 }: {
     currentId?: string,
     onBackToDashboard?: () => void,
-    saveStatus?: 'saved' | 'saving' | 'unsaved'
+    saveStatus?: 'saved' | 'saving' | 'unsaved',
+    onlineUsers?: string[]
 }) {
     const { data, updateData } = useBrochure();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,60 +35,37 @@ export function Header({
 
     const handleSaveToCloud = async () => {
         if (!supabase) {
-            alert('請先在 .env 設定好 VITE_SUPABASE_URL 與 VITE_SUPABASE_ANON_KEY');
+            alert('系統尚未連接至雲端資料庫');
             return;
         }
 
-        setLogTitle('儲存至雲端');
+        const urlParams = new URLSearchParams(window.location.search);
+        const existingId = currentId || urlParams.get('id');
+        
+        if (!existingId) {
+            alert('手冊 ID 遺失，無法進行雲端同步');
+            return;
+        }
+
+        setLogTitle('同步至雲端');
         setLogs([]);
         setIsLogOpen(true);
         setIsSavingCloud(true);
-        addLog('開始連接 Supabase...');
 
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            // 優先使用從 App 傳下來的 currentId，避免讀取網址失敗
-            const existingId = currentId || urlParams.get('id');
             const dataToSave = { ...data };
+            // 統一使用 storage.saveBrochure，這會自動處理：
+            // 1. 本地快取 2. 雲端 Upsert 3. 最後修改人紀錄 4. 修改歷程 Log
+            const result = await storage.saveBrochure(existingId, dataToSave);
 
-            if (existingId) {
-                addLog(`找到現有 ID: ${existingId}，準備更新紀錄...`);
-                // 更新現有的資料
-                const { error } = await supabase
-                    .from('brochures')
-                    .update({ data: dataToSave, updated_at: new Date().toISOString() })
-                    .eq('id', existingId);
-
-                if (error) throw error;
-                addLog('雲端更新成功！您可以繼續使用原連結分享。', 'success');
+            if (result.success) {
+                setLogs([{ id: '1', message: '儲存成功', level: 'success', timestamp: new Date() }]);
             } else {
-                addLog('建立新紀錄...');
-                // 新增一筆資料
-                const { data: result, error } = await supabase
-                    .from('brochures')
-                    .insert({ data: dataToSave })
-                    .select('id')
-                    .single();
-
-                if (error) throw error;
-
-                addLog(`雲端儲存成功！獲得新 ID: ${result.id}`, 'success');
-
-                // ⭐ 關鍵：立即把資料存進 localStorage（以 Supabase ID 為 key）
-                // 這樣重載後直接從本機讀取，不需要再去 Supabase 抓取，避免重複建立新紀錄
-                storage.saveBrochure(result.id, dataToSave);
-
-                // 更新網址加上 id
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('id', result.id);
-                window.history.pushState({}, '', newUrl.toString());
-                addLog('網址已更新，請複製當前網址來分享您的手冊。', 'success');
-                // 重新載入以套用新的 ID
-                setTimeout(() => window.location.reload(), 1500);
+                throw new Error(result.error || '同步過程發生未知錯誤');
             }
         } catch (error: any) {
-            console.error('儲存到 Supabase 失敗:', error);
-            addLog(`儲存失敗：${error.message || '未知錯誤，請確認 table(brochures) 是否已建立'}`, 'error');
+            console.error('儲存失敗:', error);
+            setLogs([{ id: 'err', message: error.message || '儲存失敗，請檢查網路連線', level: 'error', timestamp: new Date() }]);
         } finally {
             setIsSavingCloud(false);
         }
@@ -233,6 +212,23 @@ export function Header({
                         {saveStatus === 'unsaved' && <span className="flex items-center gap-1 text-amber-500">待儲存...</span>}
                     </div>
                 )}
+
+                {/* 在線協作者顯示 */}
+                {onlineUsers.length > 1 && (
+                    <div className="ml-2 flex items-center -space-x-2">
+                        {onlineUsers.map((user, idx) => (
+                            <div 
+                                key={idx}
+                                title={`${user} 正在編輯中`}
+                                className="w-7 h-7 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 cursor-help"
+                                style={{ zIndex: 10 - idx }}
+                            >
+                                {user.substring(0, 1)}
+                            </div>
+                        ))}
+                        <span className="ml-3 text-[10px] text-gray-400 font-medium">其他 {onlineUsers.length - 1} 人在線</span>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -248,11 +244,17 @@ export function Header({
                 <button
                     onClick={handleSaveToCloud}
                     disabled={isSavingCloud}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${isSavingCloud ? 'opacity-70 cursor-wait bg-blue-50' : 'hover:bg-blue-50 text-blue-700 border-blue-200'}`}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold transition-all active:scale-95 shadow-sm ${
+                        isSavingCloud 
+                            ? 'opacity-70 cursor-wait bg-blue-50 border-blue-100 text-blue-500' 
+                            : saveStatus === 'unsaved'
+                                ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:shadow-md animate-pulse'
+                                : 'bg-white hover:bg-blue-50 text-blue-700 border-blue-200'
+                    }`}
                     title="儲存草稿到 Supabase 雲端並取得分享連結"
                 >
-                    <CloudUpload size={18} className={isSavingCloud ? 'animate-pulse' : ''} />
-                    {isSavingCloud ? '儲存中...' : '儲存至雲端'}
+                    <CloudUpload size={18} className={isSavingCloud ? 'animate-spin' : ''} />
+                    {isSavingCloud ? '正在同步...' : '強制儲存'}
                 </button>
 
                 <button

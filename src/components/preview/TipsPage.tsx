@@ -13,6 +13,16 @@ export function TipsPage() {
     return getTipsPages(data.tips);
   }, [data.tips]);
 
+  const isBulleted = (line: string) => {
+    const trimmed = line.trim();
+    // 偵測常見的項目符號開頭
+    return trimmed.startsWith('•') || 
+           trimmed.startsWith('・') || 
+           trimmed.startsWith('-') || 
+           trimmed.startsWith('＊') || 
+           trimmed.startsWith('*');
+  };
+
   if (pages.length === 0) return null;
 
   return (
@@ -39,7 +49,10 @@ export function TipsPage() {
                     {item.content && (
                       <div className="space-y-2 mb-4">
                         {item.content.split('\n').filter((line: string) => line.trim() !== '').map((line: string, lIdx: number) => (
-                          <p key={lIdx} className="dynamic-text text-gray-600 text-justify font-medium leading-relaxed">
+                          <p 
+                            key={lIdx} 
+                            className={`dynamic-text text-gray-600 text-justify font-medium leading-relaxed ${isBulleted(line) ? 'hanging-indent' : ''}`}
+                          >
                             {data.tips.showAutoNumbering ? `${lIdx + 1}. ` : ''}
                             {parseRichText(line, data.theme.primary)}
                           </p>
@@ -58,7 +71,10 @@ export function TipsPage() {
                             </h4>
                             <div className="space-y-1.5">
                               {section.content?.split('\n').filter((l: string) => l.trim() !== '').map((line: string, lIdx: number) => (
-                                <p key={lIdx} className="dynamic-text text-gray-600 text-justify leading-relaxed">
+                                <p 
+                                  key={lIdx} 
+                                  className={`dynamic-text text-gray-600 text-justify leading-relaxed ${isBulleted(line) ? 'hanging-indent' : ''}`}
+                                >
                                   {parseRichText(line, data.theme.primary)}
                                 </p>
                               ))}

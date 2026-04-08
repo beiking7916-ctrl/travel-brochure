@@ -12,8 +12,6 @@ const fetchWithTimeout = (input: RequestInfo | URL, init?: RequestInit) => {
 
 export const supabase = supabaseUrl && supabaseKey
     ? createClient(supabaseUrl, supabaseKey, {
-        // 停用 Realtime WebSocket（本應用不需要，且 Zeabur 環境下會拖慢載入）
-        realtime: { params: { eventsPerSecond: 0 } },
         global: { fetch: fetchWithTimeout },
         auth: { persistSession: true },
     })

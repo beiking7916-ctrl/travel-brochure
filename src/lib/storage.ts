@@ -1,6 +1,7 @@
 import { BrochureData, createDefaultData } from '../types';
 import { get, set, del } from 'idb-keyval';
-import { supabase } from './supabase'; //
+import { supabase } from './supabase';
+import { auth } from './auth';
 
 export interface BrochureMeta {
     id: string;
@@ -10,6 +11,7 @@ export interface BrochureMeta {
     isPublished?: boolean;
     createdAt: string;
     updatedAt: string;
+    lastModifiedBy?: string;
     isDeleted?: boolean;
 }
 
@@ -24,7 +26,7 @@ export const storage = {
                 // 優化：僅抓取 Metadata，不抓取完整巨大的 data 物件
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, last_modified_by, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
@@ -41,6 +43,7 @@ export const storage = {
                             isPublished: item.isPublished === 'true' || item.isPublished === true,
                             createdAt: item.created_at,
                             updatedAt: item.updated_at,
+                            lastModifiedBy: item.last_modified_by || '',
                             isDeleted: false
                         }));
                     
@@ -95,55 +98,75 @@ export const storage = {
         }
     },
 
-    // 儲存單一手冊內容（同步到雲端）
-    async saveBrochure(id: string, data: BrochureData): Promise<void> {
+    // 儲存單一本手冊內容（同步到雲端）
+    async saveBrochure(id: string, data: BrochureData): Promise<{ success: boolean; error?: string }> {
         const now = new Date().toISOString();
+        let syncError = '';
         
-        // 1. 儲存到本機 IndexedDB
+        // 1. 儲存到本機 IndexedDB (這是一定會成功的)
         try {
             await set(`${STORAGE_KEY_PREFIX}${id}`, data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('本機快取失敗：', error);
         }
 
         // 2. 儲存到雲端 Supabase
         if (supabase) {
+            const user = await auth.getCurrentUser();
+            const editorName = user?.name || user?.email || '未知使用者';
+
             const { error: cloudError } = await supabase
                 .from('brochures')
                 .upsert({
                     id: id,
                     data: data,
-                    updated_at: now
+                    updated_at: now,
+                    last_modified_by: editorName
                 });
             
             if (cloudError) {
-                console.error('雲端同步失敗（請確認是否已登入或 RLS 設定）：', cloudError.message);
+                syncError = cloudError.message;
+                console.error('雲端同步失敗：', syncError);
+            } else {
+                // 4. 同步寫入修改歷程 (Audit Log)
+                await supabase.from('brochure_logs').insert({
+                    brochure_id: id,
+                    editor_name: editorName,
+                    action_type: 'save'
+                });
             }
         }
 
-        // 3. 更新列表 Meta
-        const list = await this.getList();
-        const existingIndex = list.findIndex(item => item.id === id);
+        // 3. 更新本地列表 Meta (不需要重新 getList，直接在記憶體中更新)
+        try {
+            const list = (await get(LIST_KEY) as BrochureMeta[]) || [];
+            const existingIndex = list.findIndex(item => item.id === id);
 
-        const title = data.title || '未命名手冊';
-        const agency = data.agency || '';
-        const groupNumber = data.groupNumber || '';
-        const isPublished = !!data.isPublished;
+            const title = data.title || '未命名手冊';
+            const agency = data.agency || '';
+            const groupNumber = data.groupNumber || '';
+            const isPublished = !!data.isPublished;
 
-        if (existingIndex >= 0) {
-            list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, updatedAt: now };
-        } else {
-            list.unshift({
-                id,
-                title,
-                agency,
-                groupNumber,
-                isPublished,
-                createdAt: now,
-                updatedAt: now,
-            });
+            if (existingIndex >= 0) {
+                list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, updatedAt: now, lastModifiedBy: (await auth.getCurrentUser())?.name || '' };
+            } else {
+                list.unshift({
+                    id,
+                    title,
+                    agency,
+                    groupNumber,
+                    isPublished,
+                    createdAt: now,
+                    updatedAt: now,
+                    lastModifiedBy: (await auth.getCurrentUser())?.name || ''
+                });
+            }
+            await set(LIST_KEY, list);
+        } catch (error) {
+            console.error('本地列表更新失敗：', error);
         }
-        await this.saveList(list);
+
+        return { success: !syncError, error: syncError };
     },
 
     // 建立全新手冊
@@ -197,6 +220,24 @@ export const storage = {
         if (data) {
             data.isDeleted = true;
             await this.saveBrochure(id, data);
+        }
+    },
+
+    // 取得修改歷程紀錄
+    async getLogs(brochureId: string): Promise<any[]> {
+        if (!supabase) return [];
+        try {
+            const { data, error } = await supabase
+                .from('brochure_logs')
+                .select('*')
+                .eq('brochure_id', brochureId)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('取得歷程紀錄失敗：', error);
+            return [];
         }
     }
 };

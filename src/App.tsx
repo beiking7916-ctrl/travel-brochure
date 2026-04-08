@@ -10,25 +10,72 @@ import { EBookView } from './components/preview/EBookView';
 import { auth } from './lib/auth';
 import { supabase } from './lib/supabase';
 import { storage } from './lib/storage';
-import type { BrochureData } from './types';
+import type { BrochureData, User } from './types';
 
-function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackToDashboard: () => void }) {
+function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: string, currentUser: User | null, onBackToDashboard: () => void }) {
   const { data } = useBrochure();
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const isFirstMount = React.useRef(true);
 
   // 20秒防抖自動儲存
   useEffect(() => {
+    // 初始掛載時不觸發儲存
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
     setSaveStatus('unsaved');
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       setSaveStatus('saving');
-      storage.saveBrochure(currentId, data);
-      setLastSaved(new Date());
-      setSaveStatus('saved');
+      const result = await storage.saveBrochure(currentId, data);
+      
+      if (result.success) {
+        setLastSaved(new Date());
+        setSaveStatus('saved');
+      } else {
+        // 同步失敗時回到待儲存狀態，以便使用者再次手動觸發或重試
+        console.error('自動儲存同步失敗:', result.error);
+        setSaveStatus('unsaved');
+      }
     }, 20000);
 
     return () => clearTimeout(timer);
   }, [data, currentId]);
+
+  // 實時在線 Presence 監聽
+  useEffect(() => {
+    if (!supabase || !currentId || !currentUser) return;
+
+    const channel = supabase.channel(`brochure_${currentId}`, {
+      config: {
+        presence: {
+          key: currentUser.name || currentUser.employee_id,
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        // 取得目前在線的其他使用者名稱清單
+        const users = Object.keys(state);
+        setOnlineUsers(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [currentId, currentUser]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -36,6 +83,7 @@ function InnerApp({ currentId, onBackToDashboard }: { currentId: string, onBackT
         currentId={currentId}
         onBackToDashboard={onBackToDashboard}
         saveStatus={saveStatus}
+        onlineUsers={onlineUsers}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -55,11 +103,13 @@ function App() {
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<BrochureData | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     async function loadData() {
       // 1. 檢查登入狀態
-      const currentUser = await auth.getCurrentUser();
+      const user = await auth.getCurrentUser();
+      setCurrentUser(user);
       
       // 2. 處理網址參數
       const urlParams = new URLSearchParams(window.location.search);
@@ -83,7 +133,7 @@ function App() {
       }
 
       // 如果未登入，強制導向登入頁面
-      if (!currentUser) {
+      if (!user) {
          setView('login');
          setLoading(false);
          return;
@@ -201,6 +251,7 @@ function App() {
     <BrochureProvider initialData={initialData} key={currentId}>
       <InnerApp
         currentId={currentId!}
+        currentUser={currentUser}
         onBackToDashboard={() => {
           setView('dashboard');
           setCurrentId(null);

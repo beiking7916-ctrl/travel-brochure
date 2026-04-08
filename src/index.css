@@ -150,6 +150,42 @@ body {
     position: relative !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    /* 加入畫質優化 */
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+    text-rendering: optimizeLegibility !important;
+  }
+
+  /* 強化文字平滑度與銳利度 */
+  * {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* 針對圖片細緻度優化 */
+  img {
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: high-quality !important;
+    -ms-interpolation-mode: bicubic !important;
+    max-width: 100% !important;
+    height: auto !important;
+    /* 避免圖層混合導致的模糊 */
+    will-change: auto !important;
+  }
+
+  /* 確保向量圖示 (Lucide) 絕對銳利 */
+  svg {
+    shape-rendering: geometricPrecision !important;
+  }
+
+  /* 避免列印時發生色塊斷層 */
+  div, section, article {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
   .a5-page:last-child {
@@ -246,3 +282,30 @@ body {
 .dynamic-img-aspect-hotel { padding-bottom: calc(60% * var(--image-height-scale, 1.0)) !important; }
 .dynamic-img-max-h-24 { max-height: calc(6rem * var(--image-height-scale, 1.0)) !important; }
 .dynamic-img-h-airport-map { max-height: calc(140px * var(--image-height-scale, 1.0)) !important; }
+
+/* 懸掛縮排：用於項目符號與文字內容的對齊 */
+.hanging-indent {
+  padding-left: 1.25em !important;
+  text-indent: -1.25em !important;
+}
+
+/* 儲存進度與成功動畫 */
+@keyframes check-bounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes progress-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.animate-check {
+  animation: check-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-progress-pulse {
+  animation: progress-pulse 2s ease-in-out infinite;
+}
