@@ -112,6 +112,19 @@ function App() {
     }
 
     loadData();
+
+    // 監聽登入狀態變更 (處理登出或 Session 失效)
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setView('login');
+        setCurrentId(null);
+        setInitialData(null);
+      }
+    }) || { data: { subscription: null } };
+
+    return () => {
+      subscription?.unsubscribe();
+    }
   }, []);
 
   if (loading) {

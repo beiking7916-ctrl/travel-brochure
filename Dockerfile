@@ -32,4 +32,4 @@ COPY --from=build /app/dist /usr/share/nginx/html/travel-brochure
 EXPOSE 80
 
 # 啟動時讀取 Zeabur 提供的 PORT 環境變數（預設 fallback 為 80）並寫入 Nginx 設定，然後啟動
-CMD sh -c "sed -i 's/listen 80;/listen '\"${PORT:-80}\"';/g' /etc/nginx/conf.d/nginx.conf && exec nginx -g 'daemon off;'"
+CMD sh -c "sed -i 's/listen 80;/listen '\"${PORT:-8080}\"';/g' /etc/nginx/conf.d/nginx.conf && exec nginx -g 'daemon off;'"

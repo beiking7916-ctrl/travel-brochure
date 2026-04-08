@@ -50,9 +50,9 @@ export const auth = {
                 return JSON.parse(localUser);
             }
 
-            // 2. 檢查 Supabase Auth
-            const { data: { user } } = await supabase.auth.getUser();
-            return user;
+            // 2. 檢查 Supabase Auth (優先使用 getSession 進行快速本地檢查)
+            const { data: { session } } = await supabase.auth.getSession();
+            return session?.user ?? null;
         } catch {
             return null;
         }
