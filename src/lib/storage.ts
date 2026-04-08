@@ -13,6 +13,8 @@ export interface BrochureMeta {
     updatedAt: string;
     lastModifiedBy?: string;
     isDeleted?: boolean;
+    expiresAt?: string;
+    shortId?: string;
 }
 
 const STORAGE_KEY_PREFIX = 'travel_brochure_';
@@ -26,7 +28,7 @@ export const storage = {
                 // 優化：僅抓取 Metadata，不抓取完整巨大的 data 物件
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, last_modified_by, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, expiresAt:data->>expiresAt, shortId:data->>shortId, last_modified_by, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
@@ -44,7 +46,9 @@ export const storage = {
                             createdAt: item.created_at,
                             updatedAt: item.updated_at,
                             lastModifiedBy: item.last_modified_by || '',
-                            isDeleted: false
+                            isDeleted: false,
+                            expiresAt: item.expiresAt || '',
+                            shortId: item.shortId || ''
                         }));
                     
                     // 同步到本機列表快取
@@ -100,6 +104,16 @@ export const storage = {
 
     // 儲存單一本手冊內容（同步到雲端）
     async saveBrochure(id: string, data: BrochureData): Promise<{ success: boolean; error?: string }> {
+        // 如果已發佈但還沒有短代碼，生成一個
+        if (data.isPublished && !data.shortId) {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            data.shortId = code;
+        }
+
         const now = new Date().toISOString();
         let syncError = '';
         
@@ -120,6 +134,7 @@ export const storage = {
                 .upsert({
                     id: id,
                     data: data,
+                    short_id: data.shortId || null, // 同步寫入特定欄位
                     updated_at: now,
                     last_modified_by: editorName
                 });
@@ -146,9 +161,11 @@ export const storage = {
             const agency = data.agency || '';
             const groupNumber = data.groupNumber || '';
             const isPublished = !!data.isPublished;
+            const expiresAt = data.expiresAt || '';
+            const shortId = data.shortId || '';
 
             if (existingIndex >= 0) {
-                list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, updatedAt: now, lastModifiedBy: (await auth.getCurrentUser())?.name || '' };
+                list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, expiresAt, shortId, updatedAt: now, lastModifiedBy: (await auth.getCurrentUser())?.name || '' };
             } else {
                 list.unshift({
                     id,
@@ -156,6 +173,8 @@ export const storage = {
                     agency,
                     groupNumber,
                     isPublished,
+                    expiresAt,
+                    shortId,
                     createdAt: now,
                     updatedAt: now,
                     lastModifiedBy: (await auth.getCurrentUser())?.name || ''

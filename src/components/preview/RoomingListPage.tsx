@@ -26,10 +26,10 @@ export function RoomingListPage() {
 
                                 {hasHotels ? (
                                     hotels.map((h, i) => (
-                                        <th key={i} className="border border-gray-200 px-1 py-1 bg-blue-50/50 min-w-[60px]">
+                                        <th key={i} className="border border-gray-200 px-1 py-2 bg-blue-50/50 min-w-[80px]">
                                             <div className="flex flex-col items-center leading-tight">
-                                                <span className="text-[7px] text-blue-600/70 font-black uppercase tracking-tighter">H{i + 1}</span>
-                                                <span className="text-[9px] break-words line-clamp-2 uppercase leading-none">
+                                                <span className="text-[8px] text-blue-600/70 font-black uppercase tracking-tighter">H{i + 1}</span>
+                                                <span className="text-[11px] font-bold break-words uppercase leading-tight mt-0.5">
                                                     {h.name || '飯店'}
                                                 </span>
                                             </div>
@@ -69,7 +69,7 @@ export function RoomingListPage() {
                                                     {currentSeq}
                                                 </td>
 
-                                                <td className="border border-gray-200 px-2 py-1 text-left text-gray-800 dynamic-text truncate">
+                                                <td className="border border-gray-200 px-2 py-1 text-left text-gray-800 dynamic-text break-words">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold">{name || '-'}</span>
                                                         {(room.units?.[nameIdx] || room.titles?.[nameIdx]) && (
@@ -108,7 +108,7 @@ export function RoomingListPage() {
                                                 {nameIdx === 0 && (
                                                     <td className="border border-gray-200 px-2 py-2 bg-white align-middle text-left" rowSpan={peopleCount}>
                                                         {room.remarks ? (
-                                                            <div className="dynamic-text text-gray-500 leading-tight line-clamp-3">
+                                                            <div className="dynamic-text text-gray-500 leading-tight break-words">
                                                                 {room.remarks}
                                                             </div>
                                                         ) : (

@@ -22,6 +22,8 @@ export function EBookView() {
   const { data } = useBrochure();
   const [currentPage, setCurrentPage] = useState(0);
   const [showTOC, setShowTOC] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [isUIHidden, setIsUIHidden] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -137,7 +139,9 @@ export function EBookView() {
   return (
     <div className="fixed inset-0 bg-[#121212] flex flex-col overflow-hidden select-none perspective-2000">
       {/* 頂部工具列 */}
-      <div className="h-14 bg-black/60 backdrop-blur-xl flex items-center justify-between px-6 z-50 border-b border-white/5">
+      <div 
+        className={`h-14 bg-black/80 backdrop-blur-xl flex items-center justify-between px-6 z-50 border-b border-white/5 transition-all duration-500 ${isUIHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}
+      >
         <div className="flex items-center gap-3">
           <div 
             className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-lg"
@@ -152,6 +156,26 @@ export function EBookView() {
         </div>
 
         <div className="flex items-center gap-2">
+           <div className="flex items-center bg-white/10 rounded-xl p-1 mr-2">
+             <button 
+               onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
+               className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+               title="縮小"
+             >
+               <span className="text-lg font-bold">−</span>
+             </button>
+             <div className="px-2 text-[10px] font-mono text-white/40 min-w-[40px] text-center">
+               {Math.round(zoom * 100)}%
+             </div>
+             <button 
+               onClick={() => setZoom(prev => Math.min(2.5, prev + 0.25))}
+               className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+               title="放大"
+             >
+               <span className="text-lg font-bold">+</span>
+             </button>
+           </div>
+           
            <button 
              onClick={() => setShowTOC(!showTOC)}
              className={`p-2 rounded-xl transition-all ${showTOC ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
@@ -165,7 +189,8 @@ export function EBookView() {
       {/* 電子書本體 */}
       <div 
         ref={containerRef}
-        className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a]"
+        onClick={() => setIsUIHidden(!isUIHidden)}
+        className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] cursor-pointer"
         style={{ scrollBehavior: isFlipping ? 'auto' : 'smooth' }}
       >
         {pages.map((page, index) => {
@@ -178,7 +203,11 @@ export function EBookView() {
                 className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 sm:p-4 md:p-8"
             >
                 {/* 3D 容器 */}
-                <div className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-transform duration-700 ${flippingClass}`}>
+                <div 
+                  className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-all duration-700 ${flippingClass}`}
+                  style={{ transform: `scale(${zoom})` }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                     
                     {/* 紙張基底 */}
                     <div className="absolute inset-0 bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm overflow-hidden backface-hidden">
@@ -209,7 +238,7 @@ export function EBookView() {
       </div>
 
       {/* 底部導覽列 */}
-      <div className="h-20 bg-black/60 backdrop-blur-xl flex flex-col items-center justify-center px-6 z-40 border-t border-white/5 space-y-2">
+      <div className={`h-20 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center px-6 z-40 border-t border-white/5 space-y-2 transition-all duration-500 ${isUIHidden ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
         <div className="flex items-center gap-10 md:gap-16 text-white/80">
           <button 
             onClick={prevPage}
@@ -299,24 +328,24 @@ export function EBookView() {
         .rotate-y-180 { transform: rotateY(180deg); }
         
         @keyframes flip-out {
-          0% { transform: rotateY(0deg); opacity: 1; }
-          40% { transform: rotateY(-30deg) scale(0.95); }
-          100% { transform: rotateY(-180deg) translateX(-100%); opacity: 0; }
+          0% { transform: rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
+          20% { transform: rotateY(-10deg) scale(0.98); filter: brightness(0.9); }
+          100% { transform: rotateY(-180deg) translateX(-120%) scale(0.9); opacity: 0; filter: brightness(0.5); }
         }
         
         @keyframes flip-in {
-          0% { transform: rotateY(0deg); opacity: 1; }
-          40% { transform: rotateY(30deg) scale(0.95); }
-          100% { transform: rotateY(180deg) translateX(100%); opacity: 0; }
+          0% { transform: rotateY(0deg) scale(1); opacity: 1; filter: brightness(1); }
+          20% { transform: rotateY(10deg) scale(0.98); filter: brightness(0.9); }
+          100% { transform: rotateY(180deg) translateX(120%) scale(0.9); opacity: 0; filter: brightness(0.5); }
         }
 
         .animate-flip-out {
-          animation: flip-out 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+          animation: flip-out 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           transform-origin: left center;
         }
 
         .animate-flip-in {
-          animation: flip-in 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+          animation: flip-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           transform-origin: right center;
         }
       `}</style>

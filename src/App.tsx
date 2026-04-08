@@ -118,20 +118,31 @@ function App() {
 
       // 電子書模式特殊處理 (不強制導向登入，但會檢查發佈狀態)
       if (mode === 'ebook' && urlId) {
-        const cloudData = await storage.getBrochure(urlId);
+        let cloudData = await storage.getBrochure(urlId);
+        
+        // 如果找不到 id，嘗試搜尋 shortId
+        if (!cloudData && supabase) {
+            const { data: found } = await supabase
+                .from('brochures')
+                .select('data')
+                .eq('data->>shortId', urlId)
+                .single();
+            if (found) cloudData = found.data as BrochureData;
+        }
+
         if (cloudData) {
-          // 檢查是否已過期 (下架)
-          const isExpired = cloudData.expiresAt && new Date(cloudData.expiresAt).getTime() < new Date().setHours(0,0,0,0);
-          
-          if ((cloudData.isPublished && !isExpired) || currentUser) { // 已發佈且未過期，或已登入管理者皆可看
-            setInitialData(cloudData);
-            setCurrentId(urlId);
-            setView('ebook');
-            setLoading(false);
-            return;
-          } else {
-            alert(isExpired ? '此手冊已過期下架。' : '此手冊尚未發佈，無法線上閱讀。');
-          }
+            // 檢查是否已過期 (下架)
+            const isExpired = cloudData.expiresAt && new Date(cloudData.expiresAt).getTime() < new Date().setHours(0,0,0,0);
+            
+            if ((cloudData.isPublished && !isExpired) || currentUser) { // 已發佈且未過期，或已登入管理者皆可看
+              setInitialData(cloudData);
+              setCurrentId(urlId); // 這裡雖然是 shortId 但 context 會用 initialData
+              setView('ebook');
+              setLoading(false);
+              return;
+            } else {
+              alert(isExpired ? '此手冊已過期下架。' : '此手冊尚未發佈，無法線上閱讀。');
+            }
         }
       }
 

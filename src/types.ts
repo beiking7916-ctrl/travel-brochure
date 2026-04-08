@@ -205,6 +205,7 @@ export interface BrochureData {
   expiresAt?: string; // 新增：下架時間
   publishHistory?: { timestamp: string; action: 'publish' | 'unpublish'; user?: string }[]; // 新增：發佈紀錄
   version?: number; // 新增：版本號
+  shortId?: string; // 新增：短網址代碼
 }
 
 export interface User {
