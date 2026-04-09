@@ -91,23 +91,23 @@ export function EBookView() {
 
       switch (id) {
         case 'flight': 
-          hasContent = (data.flights?.length > 0) || !!(data.meetingPoint || data.meetingTime || data.tourLeader);
+          hasContent = ((data.flights?.length || 0) > 0) || !!(data.meetingPoint || data.meetingTime || data.tourLeader);
           if (hasContent) component = <FlightPage />; 
           break;
         case 'attraction': 
-          hasContent = (data.attractions?.length > 0);
+          hasContent = ((data.attractions?.length || 0) > 0);
           if (hasContent) component = <AttractionPage />; 
           break;
         case 'hotel': 
-          hasContent = (data.hotels?.length > 0);
+          hasContent = ((data.hotels?.length || 0) > 0);
           if (hasContent) component = <HotelPage />; 
           break;
         case 'hotelDetail': 
-          hasContent = (data.hotelDetails?.length > 0);
+          hasContent = ((data.hotelDetails?.length || 0) > 0);
           if (hasContent) component = <HotelDetailPage />; 
           break;
         case 'roomingList': 
-          hasContent = (data.roomingList?.length > 0);
+          hasContent = ((data.roomingList?.length || 0) > 0);
           if (hasContent) component = <RoomingListPage />; 
           break;
         case 'map': 
@@ -115,11 +115,11 @@ export function EBookView() {
           if (hasContent) component = <MapPage />; 
           break;
         case 'itinerary': 
-          hasContent = (data.itineraries?.length > 0);
+          hasContent = ((data.itineraries?.length || 0) > 0);
           if (hasContent) component = <ItineraryPage />; 
           break;
         case 'packing': 
-          hasContent = (data.packingList?.length > 0);
+          hasContent = ((data.packingList?.length || 0) > 0);
           if (hasContent) component = <PackingPage />; 
           break;
         case 'tips': 
@@ -127,11 +127,11 @@ export function EBookView() {
           if (hasContent) component = <TipsPage />; 
           break;
         case 'gridTips': 
-          hasContent = (data.gridTips?.length > 0);
+          hasContent = ((data.gridTips?.length || 0) > 0);
           if (hasContent) component = <TipsGridPage />; 
           break;
         case 'customPage': 
-          hasContent = (data.customPages?.length > 0);
+          hasContent = ((data.customPages?.length || 0) > 0);
           if (hasContent) component = <CustomPage />; 
           break;
       }
@@ -317,7 +317,7 @@ export function EBookView() {
           {pages.map((page, index) => (
             <div 
               key={`${page.id}-${index}`}
-              ref={el => pageRefs.current[index] = el}
+              ref={el => { pageRefs.current[index] = el; }}
               data-index={index}
               className="w-full flex justify-center px-4 md:px-0"
               onClick={(e) => e.stopPropagation()}
