@@ -105,6 +105,7 @@ export interface RoomingEntry {
   titles?: string[]; // 新增：職稱
   roomType: string; // '雙人房', '單人房', etc.
   remarks?: string;
+  remarksList?: string[]; // 新增：個別旅客備註
   hotelName?: string; // 回溯相容
   hotelRooms?: Record<string, string>; // 新增：飯店名稱 -> 房號 的對應
 }

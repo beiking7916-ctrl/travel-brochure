@@ -14,6 +14,7 @@ export function RoomingListForm() {
             names: ['', ''],
             units: ['', ''],
             titles: ['', ''],
+            remarksList: ['', ''],
             roomType: '雙人房',
             hotelName: '',
             hotelRooms: {},
@@ -58,6 +59,16 @@ export function RoomingListForm() {
         updateData({ roomingList: newList });
     };
 
+    const handleUpdateRemark = (roomIndex: number, nameIndex: number, value: string) => {
+        const newList = [...(data.roomingList || [])];
+        const newRemarks = [...(newList[roomIndex].remarksList || ['', ''])];
+        newRemarks[nameIndex] = value;
+        newList[roomIndex] = { ...newList[roomIndex], remarksList: newRemarks };
+        // 同步更新舊有的單一備註欄位以便相容性
+        newList[roomIndex].remarks = newRemarks.filter(Boolean).join('; ');
+        updateData({ roomingList: newList });
+    };
+
     const handlePasteNames = () => {
         const input = prompt('請貼上名單（每行一位旅客姓名）：');
         if (!input) return;
@@ -77,6 +88,7 @@ export function RoomingListForm() {
                 names: names,
                 units: Array(names.length).fill(''),
                 titles: Array(names.length).fill(''),
+                remarksList: Array(names.length).fill(''),
                 roomType: names.length === 1 ? '單人房' : '雙人房',
                 hotelName: data.hotels?.[0]?.name || '',
                 hotelRooms: {},
@@ -195,11 +207,11 @@ export function RoomingListForm() {
                                     )}
                                 </div>
                             </div>
-                            <div className="lg:col-span-6 space-y-1">
-                                <label className="block text-gray-400 text-[10px] font-bold uppercase">旅客資訊 (姓名 / 單位 / 職稱)</label>
+                            <div className="lg:col-span-9 space-y-1">
+                                <label className="block text-gray-400 text-[10px] font-bold uppercase">旅客資訊 (姓名 / 單位 / 職稱 / 個別備註)</label>
                                 <div className="space-y-3">
                                     {[0, 1].map((nameIdx) => (
-                                        <div key={nameIdx} className="grid grid-cols-3 gap-2">
+                                        <div key={nameIdx} className="grid grid-cols-4 gap-2">
                                             <input
                                                 type="text"
                                                 placeholder={`姓名 ${nameIdx + 1}`}
@@ -221,18 +233,16 @@ export function RoomingListForm() {
                                                 onChange={(e) => handleUpdateTitle(index, nameIdx, e.target.value)}
                                                 className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                                             />
+                                            <input
+                                                type="text"
+                                                placeholder="備註"
+                                                value={room.remarksList?.[nameIdx] || ''}
+                                                onChange={(e) => handleUpdateRemark(index, nameIdx, e.target.value)}
+                                                className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-blue-50/30"
+                                            />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                            <div className="lg:col-span-3 space-y-1">
-                                <label className="block text-gray-400 text-[10px] font-bold uppercase">備註</label>
-                                <textarea
-                                    className="w-full text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 min-h-[80px]"
-                                    placeholder="如：素食、特殊需求..."
-                                    value={room.remarks || ''}
-                                    onChange={(e) => handleUpdateRoom(index, { remarks: e.target.value })}
-                                />
                             </div>
                         </div>
                     </div>

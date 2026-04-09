@@ -24,7 +24,24 @@ export function EBookView() {
   const [showTOC, setShowTOC] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [isUIHidden, setIsUIHidden] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'flip' | 'scroll'>('flip');
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // 偵測是否為行動裝置
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 768) {
+        setLayoutMode('scroll');
+      } else {
+        setLayoutMode('flip');
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (data.title) {
@@ -63,24 +80,60 @@ export function EBookView() {
 
   const pages = useMemo(() => {
     const p: { id: string; label: string; component: React.ReactNode }[] = [
-      { id: 'cover', label: '封面', component: <CoverPage /> },
-      { id: 'toc', label: '目錄', component: <TOCPage /> }
+      { id: 'cover', label: '封面', component: <CoverPage /> }
     ];
+
+    p.push({ id: 'toc', label: '目錄', component: <TOCPage /> });
 
     visibleSections.forEach(id => {
       let component: React.ReactNode = null;
+      let hasContent = false;
+
       switch (id) {
-        case 'flight': component = <FlightPage />; break;
-        case 'attraction': component = <AttractionPage />; break;
-        case 'hotel': component = <HotelPage />; break;
-        case 'hotelDetail': component = <HotelDetailPage />; break;
-        case 'roomingList': component = <RoomingListPage />; break;
-        case 'map': component = <MapPage />; break;
-        case 'itinerary': component = <ItineraryPage />; break;
-        case 'packing': component = <PackingPage />; break;
-        case 'tips': component = <TipsPage />; break;
-        case 'gridTips': component = <TipsGridPage />; break;
-        case 'customPage': component = <CustomPage />; break;
+        case 'flight': 
+          hasContent = (data.flights?.length > 0) || !!(data.meetingPoint || data.meetingTime || data.tourLeader);
+          if (hasContent) component = <FlightPage />; 
+          break;
+        case 'attraction': 
+          hasContent = (data.attractions?.length > 0);
+          if (hasContent) component = <AttractionPage />; 
+          break;
+        case 'hotel': 
+          hasContent = (data.hotels?.length > 0);
+          if (hasContent) component = <HotelPage />; 
+          break;
+        case 'hotelDetail': 
+          hasContent = (data.hotelDetails?.length > 0);
+          if (hasContent) component = <HotelDetailPage />; 
+          break;
+        case 'roomingList': 
+          hasContent = (data.roomingList?.length > 0);
+          if (hasContent) component = <RoomingListPage />; 
+          break;
+        case 'map': 
+          hasContent = !!data.mapPage?.src;
+          if (hasContent) component = <MapPage />; 
+          break;
+        case 'itinerary': 
+          hasContent = (data.itineraries?.length > 0);
+          if (hasContent) component = <ItineraryPage />; 
+          break;
+        case 'packing': 
+          hasContent = (data.packingList?.length > 0);
+          if (hasContent) component = <PackingPage />; 
+          break;
+        case 'tips': 
+          hasContent = !!(data.tips.airport || data.tips.destination);
+          if (hasContent) component = <TipsPage />; 
+          break;
+        case 'gridTips': 
+          hasContent = (data.gridTips?.length > 0);
+          if (hasContent) component = <TipsGridPage />; 
+          break;
+        case 'customPage': 
+          hasContent = (data.customPages?.length > 0);
+          if (hasContent) component = <CustomPage />; 
+          break;
       }
       if (component) p.push({ id, label: SECTION_LABELS[id] || id, component });
     });
@@ -117,24 +170,42 @@ export function EBookView() {
     }
   };
 
+  useEffect(() => {
+    if (layoutMode === 'scroll') {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const index = Number(entry.target.getAttribute('data-index'));
+            setCurrentPage(index);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      pageRefs.current.forEach(ref => ref && observer.observe(ref));
+      return () => observer.disconnect();
+    } else {
+      const handleScroll = () => {
+        if (containerRef.current && !isFlipping) {
+          const index = Math.round(containerRef.current.scrollLeft / window.innerWidth);
+          if (index !== currentPage) setCurrentPage(index);
+        }
+      };
+
+      const container = containerRef.current;
+      container?.addEventListener('scroll', handleScroll);
+      return () => container?.removeEventListener('scroll', handleScroll);
+    }
+  }, [currentPage, isFlipping, layoutMode, pages.length]);
+
   const goToPage = (index: number) => {
     setCurrentPage(index);
     setShowTOC(false);
-    containerRef.current?.scrollTo({ left: index * window.innerWidth, behavior: 'auto' });
+    if (layoutMode === 'scroll') {
+      pageRefs.current[index]?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      containerRef.current?.scrollTo({ left: index * window.innerWidth, behavior: 'auto' });
+    }
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (containerRef.current && !isFlipping) {
-        const index = Math.round(containerRef.current.scrollLeft / window.innerWidth);
-        if (index !== currentPage) setCurrentPage(index);
-      }
-    };
-
-    const container = containerRef.current;
-    container?.addEventListener('scroll', handleScroll);
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, [currentPage, isFlipping]);
 
   return (
     <div className="fixed inset-0 bg-[#121212] flex flex-col overflow-hidden select-none perspective-2000">
@@ -187,55 +258,79 @@ export function EBookView() {
       </div>
 
       {/* 電子書本體 */}
-      <div 
-        ref={containerRef}
-        onClick={() => setIsUIHidden(!isUIHidden)}
-        className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] cursor-pointer"
-        style={{ scrollBehavior: isFlipping ? 'auto' : 'smooth' }}
-      >
-        {pages.map((page, index) => {
-          const isActive = currentPage === index;
-          const flippingClass = isFlipping === 'next' && isActive ? 'animate-flip-out' : (isFlipping === 'prev' && isActive ? 'animate-flip-in' : '');
+      {layoutMode === 'flip' ? (
+        <div 
+          ref={containerRef}
+          onClick={() => setIsUIHidden(!isUIHidden)}
+          className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] cursor-pointer"
+          style={{ scrollBehavior: isFlipping ? 'auto' : 'smooth' }}
+        >
+          {pages.map((page, index) => {
+            const isActive = currentPage === index;
+            const flippingClass = isFlipping === 'next' && isActive ? 'animate-flip-out' : (isFlipping === 'prev' && isActive ? 'animate-flip-in' : '');
 
-          return (
+            return (
+              <div 
+                  key={`${page.id}-${index}`}
+                  className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 sm:p-4 md:p-8"
+              >
+                  {/* 3D 容器 */}
+                  <div 
+                    className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-all duration-700 ${flippingClass}`}
+                    style={{ transform: `scale(${zoom})` }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                      
+                      {/* 紙張基底 */}
+                      <div className="absolute inset-0 bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm overflow-hidden backface-hidden">
+                          
+                          {/* 書頁中縫與光澤特效 */}
+                          <div className="absolute inset-0 pointer-events-none z-20">
+                              <div className="absolute top-0 bottom-0 left-0 w-[5%] bg-gradient-to-r from-black/20 to-transparent" />
+                              <div className="absolute top-0 bottom-0 left-[2%] w-[1px] bg-black/5" />
+                              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.03)]" />
+                          </div>
+
+                          {/* 內容渲染 */}
+                          <div className="h-full w-full overflow-y-auto preview-content bg-white py-2">
+                               <div className="scale-[1.0] origin-top">
+                                  {page.component}
+                               </div>
+                          </div>
+                      </div>
+
+                      {/* 翻頁時的背面 (模擬另外一面) */}
+                      <div className="absolute inset-0 bg-gray-100 rounded-sm backface-hidden rotate-y-180 z-0 flex items-center justify-center">
+                          <div className="w-1/2 h-[2px] bg-gray-200" />
+                      </div>
+                  </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div 
+          ref={scrollContainerRef}
+          onClick={() => setIsUIHidden(!isUIHidden)}
+          className="flex-1 overflow-y-auto bg-[#f8f9fa] cursor-pointer space-y-4 py-8 pb-32"
+        >
+          {pages.map((page, index) => (
             <div 
-                key={`${page.id}-${index}`}
-                className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 sm:p-4 md:p-8"
+              key={`${page.id}-${index}`}
+              ref={el => pageRefs.current[index] = el}
+              data-index={index}
+              className="w-full flex justify-center px-4 md:px-0"
+              onClick={(e) => e.stopPropagation()}
             >
-                {/* 3D 容器 */}
-                <div 
-                  className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-all duration-700 ${flippingClass}`}
-                  style={{ transform: `scale(${zoom})` }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                    
-                    {/* 紙張基底 */}
-                    <div className="absolute inset-0 bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm overflow-hidden backface-hidden">
-                        
-                        {/* 書頁中縫與光澤特效 */}
-                        <div className="absolute inset-0 pointer-events-none z-20">
-                            <div className="absolute top-0 bottom-0 left-0 w-[5%] bg-gradient-to-r from-black/20 to-transparent" />
-                            <div className="absolute top-0 bottom-0 left-[2%] w-[1px] bg-black/5" />
-                            <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.03)]" />
-                        </div>
-
-                        {/* 內容渲染 */}
-                        <div className="h-full w-full overflow-y-auto preview-content bg-white py-2">
-                             <div className="scale-[1.0] origin-top">
-                                {page.component}
-                             </div>
-                        </div>
-                    </div>
-
-                    {/* 翻頁時的背面 (模擬另外一面) */}
-                    <div className="absolute inset-0 bg-gray-100 rounded-sm backface-hidden rotate-y-180 z-0 flex items-center justify-center">
-                        <div className="w-1/2 h-[2px] bg-gray-200" />
-                    </div>
+              <div className="w-full max-w-[800px] bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+                <div className="preview-content p-1">
+                  {page.component}
                 </div>
+              </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* 底部導覽列 */}
       <div className={`h-20 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center px-6 z-40 border-t border-white/5 space-y-2 transition-all duration-500 ${isUIHidden ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
