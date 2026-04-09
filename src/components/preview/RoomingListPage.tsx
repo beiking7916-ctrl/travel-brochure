@@ -106,13 +106,16 @@ export function RoomingListPage() {
 
                                                 {/* 4. 備註 (分開顯示) */}
                                                 <td className="border border-gray-200 px-2 py-2 bg-white align-middle text-left">
-                                                    {(room.remarksList?.[nameIdx] || (nameIdx === 0 && room.remarks)) ? (
-                                                        <div className="dynamic-text text-gray-500 leading-tight break-words">
-                                                            {room.remarksList?.[nameIdx] || room.remarks}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-4" />
-                                                    )}
+                                                    {(() => {
+                                                        const remarkContent = room.remarksList ? room.remarksList[nameIdx] : (nameIdx === 0 ? room.remarks : '');
+                                                        return remarkContent ? (
+                                                            <div className="dynamic-text text-gray-500 leading-tight break-words">
+                                                                {remarkContent}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="h-4" />
+                                                        );
+                                                    })()}
                                                 </td>
                                             </tr>
                                         );
