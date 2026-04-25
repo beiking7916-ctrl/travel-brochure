@@ -14,8 +14,10 @@ import {
   Eye,
   Settings,
   X,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
+import { VersionHistoryModal } from './VersionHistoryModal';
 import type { BrochureData } from '../types';
 
 interface ManagementProps {
@@ -29,6 +31,7 @@ export function Management({ onBack, onEdit }: ManagementProps) {
   const [loading, setLoading] = useState(true);
   const [editingBrochure, setEditingBrochure] = useState<BrochureData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [historyBrochureId, setHistoryBrochureId] = useState<string | null>(null);
 
   const loadList = async () => {
     setLoading(true);
@@ -228,6 +231,16 @@ export function Management({ onBack, onEdit }: ManagementProps) {
                           >
                             <Settings size={18} />
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryBrochureId(item.id);
+                            }}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-gray-100"
+                            title="版本紀錄"
+                          >
+                            <History size={18} />
+                          </button>
                           <div className="w-px h-4 bg-gray-200 mx-1"></div>
                           <button
                             onClick={() => onEdit(item.id)}
@@ -407,6 +420,13 @@ export function Management({ onBack, onEdit }: ManagementProps) {
           </div>
         </div>
       )}
+      {/* 版本紀錄 Modal */}
+      <VersionHistoryModal 
+        isOpen={!!historyBrochureId}
+        onClose={() => setHistoryBrochureId(null)}
+        brochureId={historyBrochureId || ''}
+        onRestore={() => loadList()}
+      />
     </div>
   );
 }

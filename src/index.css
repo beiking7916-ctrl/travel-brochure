@@ -309,3 +309,44 @@ body {
 .animate-progress-pulse {
   animation: progress-pulse 2s ease-in-out infinite;
 }
+
+/* EBook Responsive Adjustments */
+@media (max-width: 767px) {
+  .preview-content {
+    font-size: 16px !important; /* 手機端字體稍微放大提升易讀性 */
+    line-height: 1.7 !important;
+  }
+  
+  .preview-content h1, 
+  .preview-content h2 {
+    text-align: center !important; /* 手機端標題預設置中 */
+  }
+
+  .preview-content .dynamic-text {
+    font-size: 15px !important;
+  }
+  
+  /* 確保手機端圖片不會太小 */
+  .preview-content img {
+    border-radius: 12px;
+  }
+}
+
+/* No Scrollbar Utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Page Spacing for Scroll View */
+.ebook-scroll-page {
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.ebook-scroll-page:active {
+  transform: scale(0.98);
+}

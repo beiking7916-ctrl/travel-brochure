@@ -118,7 +118,7 @@ export function FlightPage() {
 
       <div className="space-y-1">
         {/* 集合資訊卡片 */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="bg-gray-50/80 p-2 rounded-lg border border-gray-100 flex flex-col justify-center">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0 flex items-center gap-1">
               <MapPin size={10} /> 集合地點
@@ -139,9 +139,9 @@ export function FlightPage() {
             <Phone size={48} />
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 sm:gap-y-1 relative z-10">
             {/* 第一列：領隊 (單獨一列) */}
-            <div className="col-span-2 pb-1 border-b border-gray-50 mb-0.5 grid grid-cols-2 gap-x-4">
+            <div className="col-span-1 sm:col-span-2 pb-1 border-b border-gray-50 mb-0.5 grid grid-cols-2 gap-x-4">
               <div className="space-y-0.5">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">領隊</p>
                 <p className="dynamic-text font-black text-gray-900 leading-none">{data.tourLeader || '敬請期待'}</p>

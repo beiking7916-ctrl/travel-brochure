@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Printer, Download, Upload, CloudUpload, ArrowLeft, CheckCircle2, Globe } from 'lucide-react';
+import { Printer, Download, Upload, CloudUpload, ArrowLeft, CheckCircle2, Globe, History, Lock, Unlock } from 'lucide-react';
 import { useBrochure } from '../context/BrochureContext';
 import { PublishModal } from './PublishModal';
 import type { BrochureData } from '../types';
@@ -7,6 +7,7 @@ import type { BrochureData } from '../types';
 import { supabase } from '../lib/supabase';
 import { storage } from '../lib/storage';
 import { StatusLogModal, LogEntry, LogLevel } from './StatusLogModal';
+import { VersionHistoryModal } from './VersionHistoryModal';
 
 export function Header({
     currentId,
@@ -28,6 +29,7 @@ export function Header({
     // Status Log State
     const [isLogOpen, setIsLogOpen] = useState(false);
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [logTitle, setLogTitle] = useState('');
     const [logs, setLogs] = useState<LogEntry[]>([]);
 
@@ -211,6 +213,20 @@ export function Header({
                     📖 旅遊手冊產生器
                 </h1>
 
+                {/* 資料鎖定切換 */}
+                <button
+                    onClick={() => updateData({ isLocked: !data.isLocked })}
+                    className={`ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 border-2 ${
+                        data.isLocked 
+                            ? 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm animate-pulse' 
+                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                    }`}
+                    title={data.isLocked ? "點擊解除鎖定以恢復自動儲存" : "點擊鎖定後將停止自動儲存，保護資料不被意外更改"}
+                >
+                    {data.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                    {data.isLocked ? '資料已鎖定' : '資料未鎖定'}
+                </button>
+
                 {saveStatus && (
                     <div className="ml-4 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100">
                         {saveStatus === 'saving' && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> 儲存中...</span>}
@@ -282,6 +298,15 @@ export function Header({
                 </button>
 
                 <button
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-200 transition-colors hover:bg-amber-50 text-amber-700"
+                    title="查看並恢復之前的版本"
+                >
+                    <History size={18} />
+                    版本歷程
+                </button>
+
+                <button
                     onClick={handlePrintCover}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 transition-colors hover:bg-blue-50 text-blue-700"
                     title="將封面與封底拼成一張 A4 橫式列印"
@@ -329,6 +354,12 @@ export function Header({
             <PublishModal 
                 isOpen={isPublishModalOpen} 
                 onClose={() => setIsPublishModalOpen(false)} 
+            />
+            <VersionHistoryModal
+                isOpen={isHistoryOpen}
+                onClose={() => setIsHistoryOpen(false)}
+                brochureId={currentId || ''}
+                onRestore={(restoredData) => updateData(restoredData)}
             />
         </header>
     );

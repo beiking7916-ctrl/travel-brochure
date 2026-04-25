@@ -21,9 +21,14 @@ function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: st
 
   // 20秒防抖自動儲存
   useEffect(() => {
-    // 初始掛載時不觸發儲存
+    // 初始掛載時不觸發儲存，或是資料已鎖定時不自動儲存
     if (isFirstMount.current) {
       isFirstMount.current = false;
+      return;
+    }
+
+    if (data.isLocked) {
+      setSaveStatus('saved'); // 鎖定時顯示已儲存狀態，避免干擾
       return;
     }
 

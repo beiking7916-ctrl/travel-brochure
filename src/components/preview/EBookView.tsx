@@ -29,18 +29,27 @@ export function EBookView() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // 偵測是否為行動裝置
+  const [isDoublePage, setIsDoublePage] = useState(false);
+
+  // 偵測是否為行動裝置與螢幕寬度
   useEffect(() => {
-    const checkMobile = () => {
-      if (window.innerWidth < 768) {
+    const checkViewport = () => {
+      const width = window.innerWidth;
+      const isMobile = width < 768;
+      
+      // 手機預設瀑布流，電腦預設翻頁
+      if (isMobile) {
         setLayoutMode('scroll');
+        setIsDoublePage(false);
       } else {
         setLayoutMode('flip');
+        // 寬度夠大則顯示雙頁並排
+        setIsDoublePage(width > 1200);
       }
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
   useEffect(() => {
@@ -146,10 +155,38 @@ export function EBookView() {
     return p;
   }, [data, visibleSections]);
 
+  // 雙頁分組邏輯
+  const doublePages = useMemo(() => {
+    const pairs: { left: any, right: any, index: number }[] = [];
+    // 第一頁 (封面) 永遠單獨顯示在右側 (或者左側空白)
+    // 這裡採用專業電子書做法：封面單獨一頁，接著兩兩一組，封底單獨一頁
+    pairs.push({ left: null, right: pages[0], index: 0 });
+    
+    for (let i = 1; i < pages.length - 1; i += 2) {
+      pairs.push({ 
+        left: pages[i], 
+        right: pages[i + 1] || null, 
+        index: Math.ceil(i / 2) 
+      });
+    }
+    
+    // 如果最後一頁沒被加入 (或是它是封底)
+    if (pages.length > 1 && (pages.length % 2 === 0)) {
+        pairs.push({ left: pages[pages.length - 1], right: null, index: pairs.length });
+    } else if (pages.length > 1 && pages.length % 2 !== 0 && pairs[pairs.length-1].right === null) {
+        // Already handled
+    }
+
+    return pairs;
+  }, [pages]);
+
+  const totalDesktopPages = isDoublePage ? doublePages.length : pages.length;
+
   const [isFlipping, setIsFlipping] = useState<'next' | 'prev' | null>(null);
 
   const nextPage = () => {
-    if (currentPage < pages.length - 1 && !isFlipping) {
+    const max = isDoublePage ? doublePages.length - 1 : pages.length - 1;
+    if (currentPage < max && !isFlipping) {
       setIsFlipping('next');
       setTimeout(() => {
         setCurrentPage(prev => prev + 1);
@@ -227,6 +264,22 @@ export function EBookView() {
         </div>
 
         <div className="flex items-center gap-2">
+            {/* 切換模式按鈕 (僅限電腦) */}
+            <div className="hidden md:flex items-center bg-white/5 rounded-xl p-1 mr-2 border border-white/10">
+              <button 
+                onClick={() => setLayoutMode('flip')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${layoutMode === 'flip' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'}`}
+              >
+                翻頁視圖
+              </button>
+              <button 
+                onClick={() => setLayoutMode('scroll')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${layoutMode === 'scroll' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'}`}
+              >
+                瀑布流
+              </button>
+            </div>
+
            <div className="flex items-center bg-white/10 rounded-xl p-1 mr-2">
              <button 
                onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
@@ -265,48 +318,87 @@ export function EBookView() {
           className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] cursor-pointer"
           style={{ scrollBehavior: isFlipping ? 'auto' : 'smooth' }}
         >
-          {pages.map((page, index) => {
-            const isActive = currentPage === index;
-            const flippingClass = isFlipping === 'next' && isActive ? 'animate-flip-out' : (isFlipping === 'prev' && isActive ? 'animate-flip-in' : '');
+          {isDoublePage ? (
+            doublePages.map((pair, index) => {
+              const isActive = currentPage === index;
+              const flippingClass = isFlipping === 'next' && isActive ? 'animate-flip-out' : (isFlipping === 'prev' && isActive ? 'animate-flip-in' : '');
 
-            return (
-              <div 
-                  key={`${page.id}-${index}`}
-                  className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 sm:p-4 md:p-8"
-              >
-                  {/* 3D 容器 */}
-                  <div 
-                    className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-all duration-700 ${flippingClass}`}
-                    style={{ transform: `scale(${zoom})` }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                      
-                      {/* 紙張基底 */}
-                      <div className="absolute inset-0 bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm overflow-hidden backface-hidden">
-                          
-                          {/* 書頁中縫與光澤特效 */}
-                          <div className="absolute inset-0 pointer-events-none z-20">
-                              <div className="absolute top-0 bottom-0 left-0 w-[5%] bg-gradient-to-r from-black/20 to-transparent" />
-                              <div className="absolute top-0 bottom-0 left-[2%] w-[1px] bg-black/5" />
-                              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.03)]" />
-                          </div>
+              return (
+                <div 
+                    key={`double-${index}`}
+                    className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-8 gap-1"
+                >
+                    <div className="relative flex items-center justify-center w-full max-w-[min(95vw,calc(100vh*1.3))] aspect-[1.414/1] transition-all duration-700" style={{ transform: `scale(${zoom})` }}>
+                        
+                        {/* 左頁 */}
+                        <div className={`relative w-1/2 h-full bg-white shadow-[-10px_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-l-sm overflow-hidden border-r border-gray-100 ${flippingClass}`}>
+                            {pair.left ? (
+                              <div className="h-full w-full overflow-y-auto preview-content py-2">
+                                  {pair.left.component}
+                              </div>
+                            ) : (
+                              <div className="h-full w-full bg-gray-50 flex items-center justify-center opacity-10">
+                                <FileText size={100} />
+                              </div>
+                            )}
+                            <div className="absolute top-0 bottom-0 right-0 w-[8%] bg-gradient-to-l from-black/10 to-transparent pointer-events-none" />
+                        </div>
 
-                          {/* 內容渲染 */}
-                          <div className="h-full w-full overflow-y-auto preview-content bg-white py-2">
-                               <div className="scale-[1.0] origin-top">
-                                  {page.component}
-                               </div>
-                          </div>
-                      </div>
+                        {/* 右頁 */}
+                        <div className={`relative w-1/2 h-full bg-white shadow-[10px_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-r-sm overflow-hidden ${flippingClass}`}>
+                            {pair.right ? (
+                              <div className="h-full w-full overflow-y-auto preview-content py-2">
+                                  {pair.right.component}
+                              </div>
+                            ) : (
+                              <div className="h-full w-full bg-gray-50 flex items-center justify-center opacity-10">
+                                <FileText size={100} />
+                              </div>
+                            )}
+                            <div className="absolute top-0 bottom-0 left-0 w-[8%] bg-gradient-to-r from-black/10 to-transparent pointer-events-none" />
+                        </div>
 
-                      {/* 翻頁時的背面 (模擬另外一面) */}
-                      <div className="absolute inset-0 bg-gray-100 rounded-sm backface-hidden rotate-y-180 z-0 flex items-center justify-center">
-                          <div className="w-1/2 h-[2px] bg-gray-200" />
-                      </div>
-                  </div>
-              </div>
-            );
-          })}
+                        {/* 中間書脊 */}
+                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[2px] bg-black/10 z-30 shadow-[0_0_10px_rgba(0,0,0,0.2)]" />
+                    </div>
+                </div>
+              );
+            })
+          ) : (
+            pages.map((page, index) => {
+              const isActive = currentPage === index;
+              const flippingClass = isFlipping === 'next' && isActive ? 'animate-flip-out' : (isFlipping === 'prev' && isActive ? 'animate-flip-in' : '');
+
+              return (
+                <div 
+                    key={`${page.id}-${index}`}
+                    className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 sm:p-4 md:p-8"
+                >
+                    <div 
+                      className={`relative w-full max-w-[min(95vw,calc(100vh*0.65))] aspect-[1/1.414] preserve-3d transition-all duration-700 ${flippingClass}`}
+                      style={{ transform: `scale(${zoom})` }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="absolute inset-0 bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm overflow-hidden backface-hidden">
+                            <div className="absolute inset-0 pointer-events-none z-20">
+                                <div className="absolute top-0 bottom-0 left-0 w-[5%] bg-gradient-to-r from-black/20 to-transparent" />
+                                <div className="absolute top-0 bottom-0 left-[2%] w-[1px] bg-black/5" />
+                                <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.03)]" />
+                            </div>
+                            <div className="h-full w-full overflow-y-auto preview-content bg-white py-2">
+                                 <div className="scale-[1.0] origin-top">
+                                    {page.component}
+                                 </div>
+                            </div>
+                        </div>
+                        <div className="absolute inset-0 bg-gray-100 rounded-sm backface-hidden rotate-y-180 z-0 flex items-center justify-center">
+                            <div className="w-1/2 h-[2px] bg-gray-200" />
+                        </div>
+                    </div>
+                </div>
+              );
+            })
+          )}
         </div>
       ) : (
         <div 
@@ -345,19 +437,19 @@ export function EBookView() {
 
           <div className="flex flex-col items-center gap-2">
             <span className="text-[11px] font-black font-mono tracking-widest text-blue-400">
-              PAGE {String(currentPage + 1).padStart(2, '0')} <span className="text-white/20 mx-2">/</span> {String(pages.length).padStart(2, '0')}
+              PAGE {String(currentPage + 1).padStart(2, '0')} <span className="text-white/20 mx-2">/</span> {String(totalDesktopPages).padStart(2, '0')}
             </span>
             <div className="w-40 sm:w-60 h-1 bg-white/10 rounded-full overflow-hidden">
                <div 
                  className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500" 
-                 style={{ width: `${((currentPage + 1) / pages.length) * 100}%` }}
+                 style={{ width: `${((currentPage + 1) / totalDesktopPages) * 100}%` }}
                />
             </div>
           </div>
 
           <button 
             onClick={nextPage}
-            disabled={currentPage === pages.length - 1 || !!isFlipping}
+            disabled={currentPage === totalDesktopPages - 1 || !!isFlipping}
             className="p-3 hover:bg-white/10 rounded-full transition-all disabled:opacity-10 active:scale-90"
           >
             <ChevronRight size={28} />
@@ -381,9 +473,12 @@ export function EBookView() {
             {pages.map((page, index) => (
               <button
                 key={`toc-item-${page.id}`}
-                onClick={() => goToPage(index)}
+                onClick={() => {
+                  const targetIdx = isDoublePage ? Math.floor(index / 2) : index;
+                  goToPage(targetIdx);
+                }}
                 className={`w-full text-left px-5 py-4 rounded-2xl transition-all flex items-center justify-between group ${
-                  currentPage === index 
+                  (isDoublePage ? Math.floor(currentPage * 2) === index || Math.floor(currentPage * 2) === index - 1 : currentPage === index)
                   ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40 translate-x-1' 
                   : 'text-white/40 hover:bg-white/5 hover:text-white active:scale-95'
                 }`}

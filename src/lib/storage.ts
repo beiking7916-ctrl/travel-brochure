@@ -144,11 +144,21 @@ export const storage = {
                 console.error('雲端同步失敗：', syncError);
             } else {
                 // 4. 同步寫入修改歷程 (Audit Log)
-                await supabase.from('brochure_logs').insert({
+                // 如果是強制儲存或是發佈/下架動作，則存入完整 Snapshot 以供日後恢復
+                const { isPublished, isDeleted } = data;
+                const isMajorChange = data.isPublished !== undefined || data.isDeleted !== undefined;
+
+                console.log(`正在為手冊 ${id} 寫入快照歷程...`);
+                const logResult = await supabase.from('brochure_logs').insert({
                     brochure_id: id,
                     editor_name: editorName,
-                    action_type: 'save'
+                    action_type: 'save',
+                    data: data // 存入當快照
                 });
+
+                if (logResult.error) {
+                    console.error('歷程紀錄寫入失敗 (可能缺少 data 欄位):', logResult.error.message);
+                }
             }
         }
 
@@ -242,7 +252,37 @@ export const storage = {
         }
     },
 
-    // 取得修改歷程紀錄
+    // 取得修改歷程紀錄（包含快照的版本紀錄）
+    async getVersions(brochureId: string): Promise<any[]> {
+        if (!supabase) return [];
+        try {
+            // 先嘗試抓取所有紀錄，不要過濾 data is null，這樣才能確認是否連線正常
+            const { data, error } = await supabase
+                .from('brochure_logs')
+                .select('*')
+                .eq('brochure_id', brochureId)
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Supabase 查詢錯誤 (請確認 brochure_logs 表是否有 data 欄位):', error);
+                throw error;
+            }
+            
+            // 返回所有紀錄，UI 端會根據是否含有 data 來決定是否可恢復
+            return data || [];
+        } catch (error) {
+            console.error('取得版本紀錄失敗：', error);
+            return [];
+        }
+    },
+
+    // 恢復至指定版本
+    async restoreVersion(id: string, versionData: BrochureData): Promise<{ success: boolean; error?: string }> {
+        // 直接調用 saveBrochure 覆蓋目前內容
+        return await this.saveBrochure(id, versionData);
+    },
+
+    // 取得原始修改歷程紀錄 (Audit Log)
     async getLogs(brochureId: string): Promise<any[]> {
         if (!supabase) return [];
         try {
@@ -250,7 +290,8 @@ export const storage = {
                 .from('brochure_logs')
                 .select('*')
                 .eq('brochure_id', brochureId)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(50);
             
             if (error) throw error;
             return data || [];
