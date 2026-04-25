@@ -192,7 +192,6 @@ export interface BrochureData {
   showRoomNumber?: boolean; // 新增：是否顯示房號
   headerLogo?: string; // 新增頁首專屬(客戶) Logo
   headerText?: string; // 新增頁首自訂名稱(客戶名稱)
-  isPublished?: boolean; // 新增：發佈狀態
   isLocked?: boolean; // 新增：資料鎖定狀態
   isDeleted?: boolean; // 新增：是否已作廢
   showAgencyOnCover?: boolean; // 新增：封面是否顯示旅行社名稱
