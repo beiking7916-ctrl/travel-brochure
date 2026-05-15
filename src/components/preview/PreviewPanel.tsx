@@ -177,11 +177,13 @@ export function PreviewPanel() {
           </div>
 
           {/* 正常的頁面列表 */}
-          {pages.map((page, index) => (
-            <React.Fragment key={`print-${page.id}`}>
-              {page.component(index % 2 === 0 ? 'right' : 'left')}
-            </React.Fragment>
-          ))}
+          <div id="capture-pages-root">
+            {pages.map((page, index) => (
+              <React.Fragment key={`print-${page.id}`}>
+                {page.component(index % 2 === 0 ? 'right' : 'left')}
+              </React.Fragment>
+            ))}
+          </div>
         </div>,
         document.body
       )}

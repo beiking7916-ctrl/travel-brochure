@@ -13,22 +13,23 @@ import { storage } from './lib/storage';
 import type { BrochureData, User } from './types';
 
 function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: string, currentUser: User | null, onBackToDashboard: () => void }) {
-  const { data } = useBrochure();
+  const { data, updateData } = useBrochure();
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [hasConflict, setHasConflict] = useState(false);
   const isFirstMount = React.useRef(true);
 
   // 20秒防抖自動儲存
   useEffect(() => {
-    // 初始掛載時不觸發儲存，或是資料已鎖定時不自動儲存
+    // 初始掛載時不觸發儲存，或是資料已鎖定/發生衝突時不自動儲存
     if (isFirstMount.current) {
       isFirstMount.current = false;
       return;
     }
 
-    if (data.isLocked) {
-      setSaveStatus('saved'); // 鎖定時顯示已儲存狀態，避免干擾
+    if (data.isLocked || hasConflict) {
+      setSaveStatus('saved');
       return;
     }
 
@@ -40,6 +41,14 @@ function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: st
       if (result.success) {
         setLastSaved(new Date());
         setSaveStatus('saved');
+        // 更新 Context 中的時間戳，以便下次儲存
+        if (data.serverUpdatedAt) {
+           updateData({ serverUpdatedAt: data.serverUpdatedAt });
+        }
+      } else if (result.error === 'CONFLICT') {
+        setSaveStatus('unsaved');
+        setHasConflict(true);
+        alert('【儲存衝突】此手冊已被其他使用者修改並儲存。\n\n為避免覆蓋他人的變更，自動儲存已暫停。請複製您的變更後，重新整理頁面以取得最新版本。');
       } else {
         // 同步失敗時回到待儲存狀態，以便使用者再次手動觸發或重試
         console.error('自動儲存同步失敗:', result.error);
@@ -48,7 +57,7 @@ function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: st
     }, 20000);
 
     return () => clearTimeout(timer);
-  }, [data, currentId]);
+  }, [data, currentId, hasConflict]);
 
   // 實時在線 Presence 監聽
   useEffect(() => {
@@ -195,6 +204,57 @@ function App() {
       subscription?.unsubscribe();
     }
   }, []);
+
+  // 3. 定期檢查 Session 是否過期 (6小時自動登出)
+  useEffect(() => {
+    if (view === 'login' || view === 'ebook') return;
+
+    const checkSession = async () => {
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        // 如果 getCurrentUser 回傳 null，代表可能已過期
+        setView('login');
+        setCurrentId(null);
+        setInitialData(null);
+        setCurrentUser(null);
+      }
+    };
+
+    // 每 5 分鐘檢查一次
+    const interval = setInterval(checkSession, 5 * 60 * 1000);
+    
+    // 當視窗獲取焦點時也檢查一次，確保休眠喚醒後能立即處理
+    window.addEventListener('focus', checkSession);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkSession);
+    };
+  }, [view]);
+
+  // 4. 使用者活動偵測 (更新最後活動時間)
+  useEffect(() => {
+    if (view === 'login' || view === 'ebook') return;
+
+    let throttleTimer: NodeJS.Timeout | null = null;
+    const handleActivity = () => {
+      if (throttleTimer) return;
+      
+      // 節流處理：每 30 秒才更新一次 localStorage，避免效能損耗
+      throttleTimer = setTimeout(() => {
+        auth.updateLastActivity();
+        throttleTimer = null;
+      }, 30000);
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, handleActivity));
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+      if (throttleTimer) clearTimeout(throttleTimer);
+    };
+  }, [view]);
 
   if (loading) {
     return (

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Globe, Calendar, History, X, CheckCircle2, AlertTriangle, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { useBrochure } from '../context/BrochureContext';
+import { captureBrochurePages } from '../lib/renderUtils';
+import { storage } from '../lib/storage';
 
 interface PublishModalProps {
   isOpen: boolean;
@@ -11,29 +13,62 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
   const { data, updateData } = useBrochure();
   const [expiresAt, setExpiresAt] = useState(data.expiresAt || '');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [renderProgress, setRenderProgress] = useState({ current: 0, total: 0 });
+  const [statusMessage, setStatusMessage] = useState('');
 
   if (!isOpen) return null;
 
   const handlePublish = async () => {
     setIsProcessing(true);
-    // 模擬發佈過程
-    const now = new Date().toISOString();
-    const history = data.publishHistory || [];
-    
-    updateData({
-      isPublished: true,
-      publishedAt: now,
-      expiresAt: expiresAt,
-      publishHistory: [
-        ...history,
-        { timestamp: now, action: 'publish' }
-      ],
-      version: (data.version || 0) + 1
-    });
-    
-    setTimeout(() => {
+    setStatusMessage('準備中...');
+
+    try {
+        // 1. 執行圖片擷取以防止跑版 (High-Fidelity Snapshots)
+        setStatusMessage('正在捕捉分頁快照以確保排版正確...');
+        const images = await captureBrochurePages('#capture-pages-root', (current, total) => {
+            setRenderProgress({ current, total });
+            setStatusMessage(`正在處理第 ${current} / ${total} 頁...`);
+        });
+
+        // 2. 更新資料並發佈
+        const now = new Date().toISOString();
+        const history = data.publishHistory || [];
+        
+        const finalData = {
+          ...data,
+          isPublished: true,
+          publishedAt: now,
+          expiresAt: expiresAt,
+          publishedImages: images, // 儲存快照
+          publishHistory: [
+            ...history,
+            { timestamp: now, action: 'publish' }
+          ],
+          version: (data.version || 0) + 1
+        };
+
+        // 3. 儲存到雲端
+        setStatusMessage('正在上傳至雲端系統...');
+        // 取得 ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        if (id) {
+            const result = await storage.saveBrochure(id, finalData);
+            if (!result.success && result.error === 'CONFLICT') {
+                alert('【發佈衝突】此手冊已被其他使用者修改並儲存。\n\n發佈已取消。請重新整理頁面以取得最新版本後再試。');
+                return;
+            }
+        }
+
+        updateData(finalData);
+        setStatusMessage('發佈成功！');
+    } catch (error: any) {
+        console.error('發佈失敗:', error);
+        alert('發佈過程發生錯誤: ' + error.message);
+    } finally {
         setIsProcessing(false);
-    }, 1000);
+        setRenderProgress({ current: 0, total: 0 });
+    }
   };
 
   const handleUnpublish = () => {
@@ -182,18 +217,32 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
                 <button
                     onClick={handlePublish}
                     disabled={isProcessing}
-                    className="flex-[1.5] px-4 py-3 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-[1.5] px-4 py-3 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 relative overflow-hidden"
                 >
-                    {isProcessing ? '同步中...' : '更新發佈內容'}
+                    {isProcessing ? (
+                        <div className="flex items-center gap-2">
+                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                             <span>{statusMessage}</span>
+                        </div>
+                    ) : (
+                        '更新發佈內容'
+                    )}
                 </button>
               </>
           ) : (
               <button
                 onClick={handlePublish}
                 disabled={isProcessing}
-                className="w-full px-4 py-3 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 relative overflow-hidden"
               >
-                {isProcessing ? '正在準備發佈...' : '立即發佈線上手冊'}
+                {isProcessing ? (
+                    <div className="flex items-center gap-2">
+                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                         <span>{statusMessage}</span>
+                    </div>
+                ) : (
+                    '立即發佈線上手冊'
+                )}
               </button>
           )}
         </div>

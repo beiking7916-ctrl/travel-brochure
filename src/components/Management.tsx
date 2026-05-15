@@ -57,8 +57,12 @@ export function Management({ onBack, onEdit }: ManagementProps) {
           { timestamp: now, action: !currentStatus ? 'publish' : 'unpublish' }
         ]
       };
-      await storage.saveBrochure(id, updatedData);
-      await loadList();
+      const result = await storage.saveBrochure(id, updatedData);
+      if (result.success) {
+        await loadList();
+      } else if (result.error === 'CONFLICT') {
+        alert('【狀態變更衝突】此手冊已被其他使用者修改。請重新整理列表。');
+      }
     }
   };
 
@@ -74,9 +78,16 @@ export function Management({ onBack, onEdit }: ManagementProps) {
     if (!editingBrochure || !editingBrochure.title) return;
     setIsSaving(true);
     const id = (editingBrochure as any).id;
-    await storage.saveBrochure(id, editingBrochure);
-    await loadList();
-    setEditingBrochure(null);
+    const result = await storage.saveBrochure(id, editingBrochure);
+    
+    if (result.success) {
+      await loadList();
+      setEditingBrochure(null);
+    } else if (result.error === 'CONFLICT') {
+      alert('【儲存衝突】此手冊已被其他使用者修改並儲存。\n\n儲存已取消。請重新整理列表後再試。');
+    } else {
+      alert('儲存失敗：' + result.error);
+    }
     setIsSaving(false);
   };
 

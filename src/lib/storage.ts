@@ -82,12 +82,15 @@ export const storage = {
             if (supabase) {
                 const { data: cloudItem, error } = await supabase
                     .from('brochures')
-                    .select('data')
+                    .select('data, updated_at')
                     .eq('id', id)
                     .single();
                 
                 if (!error && cloudItem) {
                     const data = cloudItem.data as BrochureData;
+                    // 將資料庫的 updated_at 存入資料中，用於後續儲存時的衝突檢查
+                    data.serverUpdatedAt = cloudItem.updated_at;
+                    
                     // 同步回本機快取
                     await set(`${STORAGE_KEY_PREFIX}${id}`, data);
                     return data;
@@ -102,7 +105,7 @@ export const storage = {
         }
     },
 
-    // 儲存單一本手冊內容（同步到雲端）
+    // 儲存單一本手冊內容（同步到雲端，優化順序以防本地快取污染）
     async saveBrochure(id: string, data: BrochureData): Promise<{ success: boolean; error?: string }> {
         // 如果已發佈但還沒有短代碼，生成一個
         if (data.isPublished && !data.shortId) {
@@ -116,54 +119,94 @@ export const storage = {
 
         const now = new Date().toISOString();
         let syncError = '';
+        let isConflict = false;
         
-        // 1. 儲存到本機 IndexedDB (這是一定會成功的)
-        try {
-            await set(`${STORAGE_KEY_PREFIX}${id}`, data);
-        } catch (error: any) {
-            console.error('本機快取失敗：', error);
-        }
+        // 1. 準備儲存的資料，移除暫存的 serverUpdatedAt 欄位
+        const dataToSave = { ...data };
+        delete dataToSave.serverUpdatedAt;
 
-        // 2. 儲存到雲端 Supabase
+        // 2. 儲存到雲端 Supabase (優先雲端)
         if (supabase) {
-            const user = await auth.getCurrentUser();
-            const editorName = user?.name || user?.email || '未知使用者';
+            try {
+                const user = await auth.getCurrentUser();
+                const editorName = user?.name || user?.email || '未知使用者';
+                const originalUpdatedAt = data.serverUpdatedAt;
+                
+                let newUpdatedAt = now;
 
-            const { error: cloudError } = await supabase
-                .from('brochures')
-                .upsert({
-                    id: id,
-                    data: data,
-                    short_id: data.shortId || null, // 同步寫入特定欄位
-                    updated_at: now,
-                    last_modified_by: editorName
-                });
-            
-            if (cloudError) {
-                syncError = cloudError.message;
-                console.error('雲端同步失敗：', syncError);
-            } else {
-                // 4. 同步寫入修改歷程 (Audit Log)
-                // 如果是強制儲存或是發佈/下架動作，則存入完整 Snapshot 以供日後恢復
-                const { isPublished, isDeleted } = data;
-                const isMajorChange = data.isPublished !== undefined || data.isDeleted !== undefined;
+                if (originalUpdatedAt) {
+                    // 執行更新，並檢查時間戳是否一致（樂觀鎖）
+                    const { data: updatedData, error } = await supabase
+                        .from('brochures')
+                        .update({
+                            data: dataToSave,
+                            short_id: data.shortId || null,
+                            updated_at: now,
+                            last_modified_by: editorName
+                        })
+                        .eq('id', id)
+                        .eq('updated_at', originalUpdatedAt)
+                        .select('updated_at');
 
-                console.log(`正在為手冊 ${id} 寫入快照歷程...`);
-                const logResult = await supabase.from('brochure_logs').insert({
-                    brochure_id: id,
-                    editor_name: editorName,
-                    action_type: 'save',
-                    data: data // 存入當快照
-                });
-
-                if (logResult.error) {
-                    console.error('歷程紀錄寫入失敗 (可能缺少 data 欄位):', logResult.error.message);
+                    if (error) {
+                        syncError = error.message;
+                    } else if (!updatedData || updatedData.length === 0) {
+                        // 儲存衝突：雲端已被修改
+                        console.warn('儲存衝突：資料已被他人修改');
+                        isConflict = true;
+                    } else {
+                        newUpdatedAt = updatedData[0].updated_at;
+                        data.serverUpdatedAt = newUpdatedAt; // 回填時間戳
+                    }
+                } else {
+                    // 新增資料
+                    const { data: insertedData, error } = await supabase
+                        .from('brochures')
+                        .insert({
+                            id: id,
+                            data: dataToSave,
+                            short_id: data.shortId || null,
+                            updated_at: now,
+                            last_modified_by: editorName
+                        })
+                        .select('updated_at');
+                    
+                    if (error) {
+                        syncError = error.message;
+                    } else if (insertedData && insertedData.length > 0) {
+                        newUpdatedAt = insertedData[0].updated_at;
+                        data.serverUpdatedAt = newUpdatedAt; // 回填時間戳
+                    }
                 }
+
+                // 如果沒有發生衝突且雲端成功，則紀錄歷程
+                if (!isConflict && !syncError) {
+                    console.log(`正在為手冊 ${id} 寫入快照歷程...`);
+                    await supabase.from('brochure_logs').insert({
+                        brochure_id: id,
+                        editor_name: editorName,
+                        action_type: 'save',
+                        data: dataToSave
+                    });
+                }
+            } catch (err: any) {
+                console.error('雲端通訊發生意外錯誤：', err);
+                syncError = err.message || '網路通訊失敗';
             }
         }
 
-        // 3. 更新本地列表 Meta (不需要重新 getList，直接在記憶體中更新)
+        // 3. 處理本地快取更新
+        // 若發生「版本衝突 (CONFLICT)」，則絕對不更新本地快取，以免污染本地資料
+        if (isConflict) {
+            return { success: false, error: 'CONFLICT' };
+        }
+
+        // 雲端成功 或 雲端因網路問題失敗時，更新本地快取（作為備援或成功紀錄）
         try {
+            // 同步最新的 data（包含可能的 serverUpdatedAt）到本地
+            await set(`${STORAGE_KEY_PREFIX}${id}`, data);
+
+            // 更新本地列表 Meta
             const list = (await get(LIST_KEY) as BrochureMeta[]) || [];
             const existingIndex = list.findIndex(item => item.id === id);
 
@@ -175,24 +218,22 @@ export const storage = {
             const shortId = data.shortId || '';
 
             if (existingIndex >= 0) {
-                list[existingIndex] = { ...list[existingIndex], title, agency, groupNumber, isPublished, expiresAt, shortId, updatedAt: now, lastModifiedBy: (await auth.getCurrentUser())?.name || '' };
+                list[existingIndex] = { 
+                    ...list[existingIndex], 
+                    title, agency, groupNumber, isPublished, expiresAt, shortId, 
+                    updatedAt: now, 
+                    lastModifiedBy: (await auth.getCurrentUser())?.name || '' 
+                };
             } else {
                 list.unshift({
-                    id,
-                    title,
-                    agency,
-                    groupNumber,
-                    isPublished,
-                    expiresAt,
-                    shortId,
-                    createdAt: now,
-                    updatedAt: now,
+                    id, title, agency, groupNumber, isPublished, expiresAt, shortId,
+                    createdAt: now, updatedAt: now,
                     lastModifiedBy: (await auth.getCurrentUser())?.name || ''
                 });
             }
             await set(LIST_KEY, list);
         } catch (error) {
-            console.error('本地列表更新失敗：', error);
+            console.error('本地存取更新失敗：', error);
         }
 
         return { success: !syncError, error: syncError };
@@ -276,9 +317,23 @@ export const storage = {
         }
     },
 
-    // 恢復至指定版本
+    // 恢復至指定版本 (優化：先取得雲端最新時間戳再執行覆蓋，以確保恢復動作不受樂觀鎖阻擋)
     async restoreVersion(id: string, versionData: BrochureData): Promise<{ success: boolean; error?: string }> {
-        // 直接調用 saveBrochure 覆蓋目前內容
+        if (supabase) {
+            // 1. 先抓取目前的雲端版本，取得最新的時間戳
+            const { data: current, error: fetchError } = await supabase
+                .from('brochures')
+                .select('updated_at')
+                .eq('id', id)
+                .single();
+            
+            if (!fetchError && current) {
+                // 2. 將最新的時間戳填入要恢復的資料中
+                versionData.serverUpdatedAt = current.updated_at;
+            }
+        }
+        
+        // 3. 調用 saveBrochure 執行覆蓋
         return await this.saveBrochure(id, versionData);
     },
 

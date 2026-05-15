@@ -68,6 +68,18 @@ export function Header({
 
             if (result.success) {
                 setLogs([{ id: '1', message: '儲存成功', level: 'success', timestamp: new Date() }]);
+                // 更新 Context 中的時間戳，以便下次儲存
+                if (data.serverUpdatedAt) {
+                    updateData({ serverUpdatedAt: data.serverUpdatedAt });
+                }
+            } else if (result.error === 'CONFLICT') {
+                setLogs([{ 
+                    id: 'err-conflict', 
+                    message: '【儲存衝突】此手冊已被其他使用者修改並儲存。請重新整理頁面以取得最新版本，或複製目前變更後重新整理。', 
+                    level: 'error', 
+                    timestamp: new Date() 
+                }]);
+                alert('【儲存衝突】資料已被他人修改，本次儲存已取消。');
             } else {
                 throw new Error(result.error || '同步過程發生未知錯誤');
             }

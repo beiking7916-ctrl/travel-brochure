@@ -50,6 +50,7 @@ export function BrochureProvider({ children, initialData }: { children: ReactNod
       merged.gridTips = initialData.gridTips || defaults.gridTips;
       merged.roomingList = initialData.roomingList || defaults.roomingList;
       merged.customPages = initialData.customPages || defaults.customPages;
+      merged.serverUpdatedAt = initialData.serverUpdatedAt;
 
       // 確保基本數值屬性有預設值
       merged.contentFontSize = initialData.contentFontSize || defaults.contentFontSize;

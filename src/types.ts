@@ -208,6 +208,8 @@ export interface BrochureData {
   publishHistory?: { timestamp: string; action: 'publish' | 'unpublish'; user?: string }[]; // 新增：發佈紀錄
   version?: number; // 新增：版本號
   shortId?: string; // 新增：短網址代碼
+  publishedImages?: string[]; // 新增：發佈時的分頁圖片快照 (High-DPI Captured PNGs)
+  serverUpdatedAt?: string; // 新增：雲端最後更新時間，用於併發衝突檢查
 }
 
 export interface User {
@@ -416,6 +418,7 @@ export function createDefaultData(): BrochureData {
     fontFamily: "'Noto Sans TC', sans-serif", // 預設思源黑體
     groupNumber: '', // 預設空白
     isPublished: false, // 預設未發佈
+    publishedImages: [], // 預設無快照
   };
 }
 

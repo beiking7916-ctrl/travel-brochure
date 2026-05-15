@@ -88,6 +88,24 @@ export function EBookView() {
   };
 
   const pages = useMemo(() => {
+    // 優先使用發佈時產生的圖片快照 (High-Fidelity Snapshots)
+    if (data.isPublished && data.publishedImages && data.publishedImages.length > 0) {
+      return data.publishedImages.map((src, index) => ({
+        id: `snap-${index}`,
+        label: `第 ${index + 1} 頁`,
+        component: (
+          <div className="h-full w-full flex items-center justify-center bg-white">
+            <img 
+              src={src} 
+              className="max-w-full max-h-full object-contain" 
+              alt={`Page ${index + 1}`}
+              loading="lazy" 
+            />
+          </div>
+        )
+      }));
+    }
+
     const p: { id: string; label: string; component: React.ReactNode }[] = [
       { id: 'cover', label: '封面', component: <CoverPage /> }
     ];
