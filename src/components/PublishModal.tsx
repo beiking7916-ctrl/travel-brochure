@@ -42,7 +42,7 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
           publishedImages: images, // 儲存快照
           publishHistory: [
             ...history,
-            { timestamp: now, action: 'publish' }
+            { timestamp: now, action: 'publish' as const }
           ],
           version: (data.version || 0) + 1
         };
@@ -79,7 +79,7 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
       isPublished: false,
       publishHistory: [
         ...history,
-        { timestamp: now, action: 'unpublish' }
+        { timestamp: now, action: 'unpublish' as const }
       ]
     });
   };

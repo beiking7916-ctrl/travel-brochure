@@ -182,12 +182,18 @@ export const storage = {
                 // 如果沒有發生衝突且雲端成功，則紀錄歷程
                 if (!isConflict && !syncError) {
                     console.log(`正在為手冊 ${id} 寫入快照歷程...`);
-                    await supabase.from('brochure_logs').insert({
+                    const { error: logError } = await supabase.from('brochure_logs').insert({
                         brochure_id: id,
                         editor_name: editorName,
                         action_type: 'save',
                         data: dataToSave
                     });
+
+                    if (logError) {
+                        console.error('版本歷程寫入失敗：', logError.message, '請確認 brochure_logs 表格是否已正確建立。');
+                    } else {
+                        console.log('版本歷程寫入完成');
+                    }
                 }
             } catch (err: any) {
                 console.error('雲端通訊發生意外錯誤：', err);

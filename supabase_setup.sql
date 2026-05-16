@@ -7,6 +7,8 @@
 CREATE TABLE IF NOT EXISTS public.brochures (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     data JSONB NOT NULL DEFAULT '{}',
+    short_id VARCHAR(50),
+    last_modified_by VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -85,6 +87,26 @@ CREATE POLICY "Allow admin write attractions" ON public.attractions
     FOR ALL TO authenticated USING (true);
 
 
--- 5. 建立索引加速查詢
+-- 5. 建立 brochure_logs 表格 (版本紀錄快照)
+CREATE TABLE IF NOT EXISTS public.brochure_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    brochure_id UUID NOT NULL REFERENCES public.brochures(id) ON DELETE CASCADE,
+    editor_name VARCHAR(255),
+    action_type VARCHAR(50) DEFAULT 'save',
+    data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.brochure_logs ENABLE ROW LEVEL SECURITY;
+
+-- 允許已登入管理員讀取與寫入歷程
+DROP POLICY IF EXISTS "Allow admin manage logs" ON public.brochure_logs;
+CREATE POLICY "Allow admin manage logs" ON public.brochure_logs
+    FOR ALL TO authenticated USING (true);
+
+
+-- 6. 建立索引加速查詢
 CREATE INDEX IF NOT EXISTS idx_attractions_country_code ON public.attractions(country_code);
 CREATE INDEX IF NOT EXISTS idx_attractions_created_at ON public.attractions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_brochure_logs_brochure_id ON public.brochure_logs(brochure_id);
+CREATE INDEX IF NOT EXISTS idx_brochure_logs_created_at ON public.brochure_logs(created_at DESC);

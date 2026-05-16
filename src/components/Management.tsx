@@ -54,7 +54,7 @@ export function Management({ onBack, onEdit }: ManagementProps) {
         isPublished: !currentStatus,
         publishHistory: [
           ...(data.publishHistory || []),
-          { timestamp: now, action: !currentStatus ? 'publish' : 'unpublish' }
+          { timestamp: now, action: (!currentStatus ? 'publish' : 'unpublish') as 'publish' | 'unpublish' }
         ]
       };
       const result = await storage.saveBrochure(id, updatedData);
