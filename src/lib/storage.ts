@@ -1,21 +1,7 @@
-import { BrochureData, createDefaultData } from '../types';
+import { BrochureData, BrochureMeta, createDefaultData } from '../types';
 import { get, set, del } from 'idb-keyval';
 import { supabase } from './supabase';
 import { auth } from './auth';
-
-export interface BrochureMeta {
-    id: string;
-    title: string;
-    agency?: string;
-    groupNumber?: string;
-    isPublished?: boolean;
-    createdAt: string;
-    updatedAt: string;
-    lastModifiedBy?: string;
-    isDeleted?: boolean;
-    expiresAt?: string;
-    shortId?: string;
-}
 
 const STORAGE_KEY_PREFIX = 'travel_brochure_';
 const LIST_KEY = 'travel_brochure_list';
@@ -359,30 +345,6 @@ export const storage = {
         }
     },
 
-    // 取得修改歷程紀錄（包含快照的版本紀錄）
-    async getVersions(brochureId: string): Promise<any[]> {
-        if (!supabase) return [];
-        try {
-            // 先嘗試抓取所有紀錄，不要過濾 data is null，這樣才能確認是否連線正常
-            const { data, error } = await supabase
-                .from('brochure_logs')
-                .select('*')
-                .eq('brochure_id', brochureId)
-                .order('created_at', { ascending: false });
-            
-            if (error) {
-                console.error('Supabase 查詢錯誤 (請確認 brochure_logs 表是否有 data 欄位):', error);
-                throw error;
-            }
-            
-            // 返回所有紀錄，UI 端會根據是否含有 data 來決定是否可恢復
-            return data || [];
-        } catch (error) {
-            console.error('取得版本紀錄失敗：', error);
-            return [];
-        }
-    },
-
     // 恢復至指定版本 (優化：先取得雲端最新時間戳再執行覆蓋，以確保恢復動作不受樂觀鎖阻擋)
     async restoreVersion(id: string, versionData: BrochureData): Promise<{ success: boolean; error?: string }> {
         if (supabase) {
@@ -405,8 +367,12 @@ export const storage = {
 
     // 將手冊發佈到外部電子書系統 (FlipCloud)
     async publishToEbook(title: string, pages: string[]): Promise<{ success: boolean; id?: string; error?: string }> {
-        const EBOOK_API_URL = 'https://flipcloud-api.khuang167.workers.dev';
-        const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8';
+        const EBOOK_API_URL = import.meta.env.VITE_FLIPCLOUD_API_URL || 'https://flipcloud-api.khuang167.workers.dev';
+        const API_KEY = import.meta.env.VITE_FLIPCLOUD_API_KEY;
+
+        if (!API_KEY) {
+            return { success: false, error: 'FlipCloud API 金鑰尚未設定' };
+        }
 
         try {
             const response = await fetch(`${EBOOK_API_URL}/api/upload`, {

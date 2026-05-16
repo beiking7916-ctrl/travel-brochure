@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Globe } from 'lucide-react';
 import { BrochureProvider, useBrochure } from './context/BrochureContext';
 import { EditorPanel } from './components/editor/EditorPanel';

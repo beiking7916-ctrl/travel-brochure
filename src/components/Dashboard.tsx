@@ -91,7 +91,7 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
 
     const handleViewHistory = async (e: React.MouseEvent, id: string, title: string) => {
         e.stopPropagation();
-        const logs = await storage.getLogs(id);
+        const logs = await storage.getVersions(id);
         setHistoryModal({
             isOpen: true,
             title: title || '未命名手冊',
