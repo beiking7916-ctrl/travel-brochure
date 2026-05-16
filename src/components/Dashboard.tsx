@@ -124,7 +124,8 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
     const handleQuickUpdate = async (e: React.ChangeEvent<HTMLSelectElement> | React.MouseEvent, id: string, field: 'category' | 'status', value?: string) => {
         if (e) e.stopPropagation();
         const newValue = value || (e.target as HTMLSelectElement).value;
-        const result = await storage.updateMetadata(id, { [field]: newValue });
+        // 使用 as any 轉換類型，因為我們確信 select 的值符合 BrochureCategory | BrochureStatus
+        const result = await storage.updateMetadata(id, { [field]: newValue as any });
         if (result.success) {
             await loadList();
         } else {

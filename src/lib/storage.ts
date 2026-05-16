@@ -1,4 +1,4 @@
-import { BrochureData, BrochureMeta, createDefaultData } from '../types';
+import { BrochureData, BrochureMeta, BrochureCategory, BrochureStatus, createDefaultData } from '../types';
 export type { BrochureMeta }; // 重新匯出，讓 Dashboard 等組件能繼續從這裡引用
 import { get, set, del } from 'idb-keyval';
 import { supabase } from './supabase';
@@ -441,7 +441,7 @@ export const storage = {
     },
 
     // 快速更新手冊 Metadata (分類、狀態、出發日期等)
-    async updateMetadata(id: string, updates: { category?: string; status?: string; departureDate?: string }): Promise<{ success: boolean; error?: string }> {
+    async updateMetadata(id: string, updates: { category?: BrochureCategory; status?: BrochureStatus; departureDate?: string }): Promise<{ success: boolean; error?: string }> {
         if (!supabase) return { success: false, error: 'Supabase 未設定' };
 
         try {
