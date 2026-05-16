@@ -15,7 +15,7 @@ interface DashboardProps {
 export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: DashboardProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [brochures, setBrochures] = useState<BrochureMeta[]>([]);
-    
+
     // History Modal State
     const [historyModal, setHistoryModal] = useState<{ isOpen: boolean; title: string; logs: any[] }>({
         isOpen: false,
@@ -110,14 +110,25 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
 
     const getStatusColor = (status?: string) => {
         switch (status) {
-          case '待製作': return 'bg-gray-100 text-gray-500 border-gray-200';
-          case '初稿完成': return 'bg-blue-50 text-blue-600 border-blue-100';
-          case '待調整': return 'bg-orange-50 text-orange-600 border-orange-100';
-          case '內部確認':
-          case '待客戶確認': return 'bg-purple-50 text-purple-600 border-purple-100';
-          case '客戶已確認': return 'bg-green-50 text-green-600 border-green-100';
-          case '已出團': return 'bg-slate-700 text-white border-slate-800';
-          default: return 'bg-gray-100 text-gray-500 border-gray-200';
+            case '待製作': return 'bg-gray-100 text-gray-500 border-gray-200';
+            case '初稿完成': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case '待調整': return 'bg-orange-50 text-orange-600 border-orange-100';
+            case '內部確認':
+            case '待客戶確認': return 'bg-purple-50 text-purple-600 border-purple-100';
+            case '客戶已確認': return 'bg-green-50 text-green-600 border-green-100';
+            case '已出團': return 'bg-slate-700 text-white border-slate-800';
+            default: return 'bg-gray-100 text-gray-500 border-gray-200';
+        }
+    };
+
+    const handleQuickUpdate = async (e: React.ChangeEvent<HTMLSelectElement> | React.MouseEvent, id: string, field: 'category' | 'status', value?: string) => {
+        if (e) e.stopPropagation();
+        const newValue = value || (e.target as HTMLSelectElement).value;
+        const result = await storage.updateMetadata(id, { [field]: newValue });
+        if (result.success) {
+            await loadList();
+        } else {
+            alert('更新失敗：' + result.error);
         }
     };
 
@@ -156,11 +167,10 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                     <button
                         onClick={handleCreate}
                         disabled={isCreating}
-                        className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors shadow-sm ${
-                            isCreating 
-                            ? 'bg-blue-300 cursor-not-allowed text-white' 
+                        className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors shadow-sm ${isCreating
+                            ? 'bg-blue-300 cursor-not-allowed text-white'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
+                            }`}
                     >
                         <Plus size={18} />
                         {isCreating ? '建立中...' : '新增手冊'}
@@ -178,11 +188,10 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                             <button
                                 onClick={handleCreate}
                                 disabled={isCreating}
-                                className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors shadow-sm ${
-                                    isCreating 
-                                    ? 'bg-blue-300 cursor-not-allowed text-white' 
+                                className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors shadow-sm ${isCreating
+                                    ? 'bg-blue-300 cursor-not-allowed text-white'
                                     : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
+                                    }`}
                             >
                                 <Plus size={20} />
                                 {isCreating ? '處理中...' : '新增手冊'}
@@ -192,21 +201,20 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                         <>
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    我的草稿列表
+                                    手冊清單
                                     <span className="text-sm font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
                                         {filteredBrochures.length} 份
                                     </span>
                                 </h2>
-                                
+
                                 <div className="flex flex-wrap items-center gap-3">
                                     <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
                                         {(['全部', '出團', '報價'] as const).map(cat => (
                                             <button
                                                 key={cat}
                                                 onClick={() => setCategoryFilter(cat)}
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                                    categoryFilter === cat ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-600'
-                                                }`}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${categoryFilter === cat ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-600'
+                                                    }`}
                                             >
                                                 {cat}
                                             </button>
@@ -246,21 +254,33 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2 mb-3">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${meta.category === '出團' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                    {meta.category || '報價'}
-                                                </span>
-                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusColor(meta.status)}`}>
-                                                    {meta.status || '待製作'}
-                                                </span>
+                                                <select
+                                                    value={meta.category || '報價'}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={(e) => handleQuickUpdate(e, meta.id, 'category')}
+                                                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border-none cursor-pointer outline-none appearance-none hover:brightness-95 transition-all ${meta.category === '出團' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}
+                                                >
+                                                    <option value="報價">報價</option>
+                                                    <option value="出團">出團</option>
+                                                </select>
+                                                <select
+                                                    value={meta.status || '待製作'}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={(e) => handleQuickUpdate(e, meta.id, 'status')}
+                                                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border cursor-pointer outline-none appearance-none hover:brightness-95 transition-all ${getStatusColor(meta.status)}`}
+                                                >
+                                                    {['待製作', '初稿完成', '待調整', '內部確認', '待客戶確認', '客戶已確認', '已出團'].map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
                                                 {meta.groupNumber && (
                                                     <span className="text-[9px] text-gray-400 font-mono ml-auto">{meta.groupNumber}</span>
                                                 )}
                                             </div>
                                             <p className="text-sm text-gray-500 line-clamp-1 mb-4 flex items-center gap-1.5">
-                                                {meta.agency || '未設定旅行社'}
-                                                {meta.departureDate && (
-                                                    <span className="text-[10px] text-gray-300 ml-auto">出發: {meta.departureDate}</span>
-                                                )}
+                                                <span className="text-[10px] text-gray-300">
+                                                    {meta.departureDate ? `出發日期:${meta.departureDate}` : '未設定出發日期'}
+                                                </span>
                                             </p>
 
                                             <div className="flex flex-col gap-1.5 mt-auto">
@@ -310,7 +330,7 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                 </div>
             </main>
 
-            <HistoryModal 
+            <HistoryModal
                 isOpen={historyModal.isOpen}
                 onClose={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
                 title={historyModal.title}

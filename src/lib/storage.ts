@@ -438,5 +438,82 @@ export const storage = {
             console.error('取得版本詳情失敗：', error);
             return null;
         }
+    },
+
+    // 快速更新手冊 Metadata (分類、狀態、出發日期等)
+    async updateMetadata(id: string, updates: { category?: string; status?: string; departureDate?: string }): Promise<{ success: boolean; error?: string }> {
+        if (!supabase) return { success: false, error: 'Supabase 未設定' };
+
+        try {
+            const user = await auth.getCurrentUser();
+            const editorName = user?.name || user?.email || '未知使用者';
+            const now = new Date().toISOString();
+
+            // 1. 先取得舊的資料內容 (JSONB)，因為我們需要同步更新 data 內的欄位
+            const { data: item, error: fetchError } = await supabase
+                .from('brochures')
+                .select('data, status')
+                .eq('id', id)
+                .single();
+
+            if (fetchError || !item) return { success: false, error: fetchError?.message || '找不到手冊' };
+
+            const oldStatus = item.status || '待製作';
+            const newStatus = updates.status || oldStatus;
+
+            // 2. 準備更新內容
+            const updatedData = { ...item.data as any };
+            if (updates.category) updatedData.category = updates.category;
+            if (updates.status) updatedData.status = updates.status;
+            if (updates.departureDate) updatedData.departureDate = updates.departureDate;
+
+            const updatePayload: any = {
+                data: updatedData,
+                updated_at: now,
+                last_modified_by: editorName
+            };
+
+            if (updates.category) updatePayload.category = updates.category;
+            if (updates.status) updatePayload.status = updates.status;
+            if (updates.departureDate) updatePayload.departure_date = updates.departureDate;
+
+            const { error: updateError } = await supabase
+                .from('brochures')
+                .update(updatePayload)
+                .eq('id', id);
+
+            if (updateError) return { success: false, error: updateError.message };
+
+            // 3. 紀錄歷程
+            if (updates.status && updates.status !== oldStatus) {
+                await supabase.from('brochure_logs').insert({
+                    brochure_id: id,
+                    editor_name: editorName,
+                    action_type: 'status_change',
+                    data: {
+                        from: oldStatus,
+                        to: updates.status,
+                        note: `透過快速選單將進度調整為「${updates.status}」`
+                    }
+                });
+            }
+
+            // 4. 同步更新本地快取
+            const list = (await get(LIST_KEY) as BrochureMeta[]) || [];
+            const existingIndex = list.findIndex(item => item.id === id);
+            if (existingIndex >= 0) {
+                list[existingIndex] = { 
+                    ...list[existingIndex], 
+                    ...updates,
+                    updatedAt: now, 
+                    lastModifiedBy: editorName 
+                };
+                await set(LIST_KEY, list);
+            }
+
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
     }
 };
