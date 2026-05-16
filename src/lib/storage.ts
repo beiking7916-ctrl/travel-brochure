@@ -446,7 +446,7 @@ export const storage = {
 
         try {
             const user = await auth.getCurrentUser();
-            const editorName = user?.name || user?.email || '未知使用者';
+            const editorName: string = user?.name || user?.email || '未知使用者';
             const now = new Date().toISOString();
 
             // 1. 先取得舊的資料內容 (JSONB)，因為我們需要同步更新 data 內的欄位
@@ -507,7 +507,7 @@ export const storage = {
                     ...updates,
                     updatedAt: now, 
                     lastModifiedBy: editorName 
-                };
+                } as BrochureMeta;
                 await set(LIST_KEY, list);
             }
 
