@@ -1,4 +1,5 @@
 import { BrochureData, BrochureMeta, createDefaultData } from '../types';
+export type { BrochureMeta }; // 重新匯出，讓 Dashboard 等組件能繼續從這裡引用
 import { get, set, del } from 'idb-keyval';
 import { supabase } from './supabase';
 import { auth } from './auth';
@@ -273,14 +274,16 @@ export const storage = {
                 list[existingIndex] = { 
                     ...list[existingIndex], 
                     title, agency, groupNumber, isPublished, expiresAt, shortId, 
+                    isDeleted: !!data.isDeleted,
                     updatedAt: now, 
-                    lastModifiedBy: (await auth.getCurrentUser())?.name || '' 
+                    lastModifiedBy: (await auth.getCurrentUser())?.name || '系統' 
                 };
             } else {
                 list.unshift({
                     id, title, agency, groupNumber, isPublished, expiresAt, shortId,
+                    isDeleted: !!data.isDeleted,
                     createdAt: now, updatedAt: now,
-                    lastModifiedBy: (await auth.getCurrentUser())?.name || ''
+                    lastModifiedBy: (await auth.getCurrentUser())?.name || '系統'
                 });
             }
             await set(LIST_KEY, list);
