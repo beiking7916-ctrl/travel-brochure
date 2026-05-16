@@ -151,6 +151,26 @@ export const defaultSectionOrder: SectionId[] = [
   'customPage'
 ];
 
+export type BrochureCategory = '出團' | '報價';
+export type BrochureStatus = '待製作' | '初稿完成' | '待調整' | '內部確認' | '待客戶確認' | '客戶已確認' | '已出團';
+
+export interface BrochureMeta {
+  id: string;
+  title: string;
+  agency: string;
+  groupNumber: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+  expiresAt?: string;
+  shortId?: string;
+  category?: BrochureCategory;
+  status?: BrochureStatus;
+  departureDate?: string;
+}
+
 export interface BrochureData {
   agency: string;
   logo: string;
@@ -205,11 +225,14 @@ export interface BrochureData {
   isPublished?: boolean; // 新增：是否已發佈線上手冊
   publishedAt?: string; // 新增：發佈時間
   expiresAt?: string; // 新增：下架時間
-  publishHistory?: { timestamp: string; action: 'publish' | 'unpublish'; user?: string }[]; // 新增：發佈紀錄
+  publishHistory?: { timestamp: string; action: 'publish' | 'unpublish' | 'status_change'; user?: string; note?: string }[]; // 新增：發佈紀錄
   version?: number; // 新增：版本號
   shortId?: string; // 新增：短網址代碼
   publishedImages?: string[]; // 新增：發佈時的分頁圖片快照 (High-DPI Captured PNGs)
   serverUpdatedAt?: string; // 新增：雲端最後更新時間，用於併發衝突檢查
+  category?: BrochureCategory; // 新增：分類
+  status?: BrochureStatus;     // 新增：製作狀態
+  departureDate?: string;      // 新增：出發日期 (用於管理與自動轉狀態)
 }
 
 export interface User {
@@ -419,6 +442,8 @@ export function createDefaultData(): BrochureData {
     groupNumber: '', // 預設空白
     isPublished: false, // 預設未發佈
     publishedImages: [], // 預設無快照
+    category: '報價',     // 預設分類
+    status: '待製作',      // 預設進度
   };
 }
 

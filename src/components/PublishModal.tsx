@@ -15,16 +15,19 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [renderProgress, setRenderProgress] = useState({ current: 0, total: 0 });
   const [statusMessage, setStatusMessage] = useState('');
+  const [publishToFlipCloud, setPublishToFlipCloud] = useState(true);
+  const [flipCloudId, setFlipCloudId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handlePublish = async () => {
     setIsProcessing(true);
     setStatusMessage('準備中...');
+    setFlipCloudId(null);
 
     try {
-        // 1. 執行圖片擷取以防止跑版 (High-Fidelity Snapshots)
-        setStatusMessage('正在捕捉分頁快照以確保排版正確...');
+        // 1. 執行圖片擷取以防止跑版 (PNG 高畫質快照)
+        setStatusMessage('正在捕捉分頁 PNG 快照以確保排版正確...');
         const images = await captureBrochurePages('#capture-pages-root', (current, total) => {
             setRenderProgress({ current, total });
             setStatusMessage(`正在處理第 ${current} / ${total} 頁...`);
@@ -47,9 +50,8 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
           version: (data.version || 0) + 1
         };
 
-        // 3. 儲存到雲端
-        setStatusMessage('正在上傳至雲端系統...');
-        // 取得 ID
+        // 3. 儲存到手冊系統雲端
+        setStatusMessage('正在同步至手冊雲端系統...');
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
         if (id) {
@@ -57,6 +59,18 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
             if (!result.success && result.error === 'CONFLICT') {
                 alert('【發佈衝突】此手冊已被其他使用者修改並儲存。\n\n發佈已取消。請重新整理頁面以取得最新版本後再試。');
                 return;
+            }
+        }
+
+        // 4. (選填) 同步發佈到 FlipCloud 電子書系統
+        if (publishToFlipCloud) {
+            setStatusMessage('正在同步至 FlipCloud 電子書系統...');
+            const ebookResult = await storage.publishToEbook(data.title || '未命名手冊', images);
+            if (ebookResult.success && ebookResult.id) {
+                setFlipCloudId(ebookResult.id);
+            } else {
+                console.error('FlipCloud 發佈失敗:', ebookResult.error);
+                alert('手冊系統發佈成功，但同步到電子書系統時失敗：' + ebookResult.error);
             }
         }
 
@@ -71,17 +85,26 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
     }
   };
 
-  const handleUnpublish = () => {
+  const handleUnpublish = async () => {
     const now = new Date().toISOString();
     const history = data.publishHistory || [];
     
-    updateData({
+    const finalData = {
+      ...data,
       isPublished: false,
       publishHistory: [
         ...history,
         { timestamp: now, action: 'unpublish' as const }
       ]
-    });
+    };
+
+    updateData(finalData);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    if (id) {
+        await storage.saveBrochure(id, finalData, false); // 手動儲存，產生版本紀錄
+    }
   };
 
   const ebookUrl = `${window.location.origin}${window.location.pathname}?id=${(new URLSearchParams(window.location.search)).get('id')}&mode=ebook`;
@@ -164,18 +187,83 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
           <div className="space-y-4">
             <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
                 <Calendar size={16} className="text-blue-500" />
-                預定下架時間 (選填)
+                發佈設定
             </h4>
-            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <p className="text-[11px] text-gray-400 mb-3">設定下架日期後，該時間一到客戶將無法再透過連結開啟此手冊。</p>
-                <input 
-                    type="date"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-sm"
-                />
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4">
+                {/* FlipCloud 同步選項 */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-blue-50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <Globe size={16} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-700">同步上架至 FlipCloud</p>
+                            <p className="text-[10px] text-gray-400">將分頁轉為高畫質 PNG 並上傳至電子書系統</p>
+                        </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            checked={publishToFlipCloud}
+                            onChange={(e) => setPublishToFlipCloud(e.target.checked)}
+                            className="sr-only peer" 
+                        />
+                        <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div>
+                    <p className="text-[11px] text-gray-400 mb-2">預定下架時間 (選填)</p>
+                    <input 
+                        type="date"
+                        value={expiresAt}
+                        onChange={(e) => setExpiresAt(e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-sm"
+                    />
+                </div>
             </div>
           </div>
+
+          {/* FlipCloud 成功連結 (如果有) */}
+          {flipCloudId && (
+            <div className="p-5 rounded-2xl border bg-blue-50 border-blue-100 animate-in slide-in-from-top duration-500">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-blue-600 text-white rounded-xl">
+                        <CheckCircle2 size={18} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-blue-900">FlipCloud 上架成功</h3>
+                        <p className="text-[10px] text-blue-600/70">電子書已成功發佈至系統</p>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-blue-100">
+                        <input 
+                            readOnly 
+                            value={`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`} 
+                            className="flex-1 text-[10px] font-mono text-gray-500 bg-transparent outline-none"
+                        />
+                        <button 
+                            onClick={() => {
+                                navigator.clipboard.writeText(`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`);
+                                alert('FlipCloud 連結已複製！');
+                            }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                        >
+                            複製
+                        </button>
+                    </div>
+                    <a 
+                      href={`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
+                    >
+                        <ExternalLink size={14} /> 開啟 FlipCloud 電子書
+                    </a>
+                </div>
+            </div>
+          )}
 
           {/* 紀錄區 */}
           <div className="space-y-4">

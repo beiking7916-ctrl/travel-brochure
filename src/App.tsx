@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Globe } from 'lucide-react';
 import { BrochureProvider, useBrochure } from './context/BrochureContext';
 import { EditorPanel } from './components/editor/EditorPanel';
 import { PreviewPanel } from './components/preview/PreviewPanel';
@@ -20,25 +21,44 @@ function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: st
   const [hasConflict, setHasConflict] = useState(false);
   const isFirstMount = React.useRef(true);
 
+  const lastSavedDataRef = useRef<string>(JSON.stringify(data));
+
   // 20秒防抖自動儲存
   useEffect(() => {
-    // 初始掛載時不觸發儲存，或是資料已鎖定/發生衝突時不自動儲存
+    // 初始掛載時不觸發儲存
     if (isFirstMount.current) {
       isFirstMount.current = false;
+      lastSavedDataRef.current = JSON.stringify(data);
       return;
     }
 
+    // 資料已鎖定或發生衝突時不自動儲存
     if (data.isLocked || hasConflict) {
       setSaveStatus('saved');
+      return;
+    }
+
+    // 檢查內容是否真的有變動 (排除 serverUpdatedAt 欄位進行比對)
+    const currentDataToCompare = { ...data };
+    delete (currentDataToCompare as any).serverUpdatedAt;
+    const currentDataStr = JSON.stringify(currentDataToCompare);
+    
+    const lastDataToCompare = JSON.parse(lastSavedDataRef.current);
+    delete (lastDataToCompare as any).serverUpdatedAt;
+    const lastDataStr = JSON.stringify(lastDataToCompare);
+
+    if (currentDataStr === lastDataStr) {
+      // 內容沒變，不需要儲存
       return;
     }
 
     setSaveStatus('unsaved');
     const timer = setTimeout(async () => {
       setSaveStatus('saving');
-      const result = await storage.saveBrochure(currentId, data);
+      const result = await storage.saveBrochure(currentId, data, true); // true 代表這是自動儲存，不產生版本快照
       
       if (result.success) {
+        lastSavedDataRef.current = JSON.stringify(data); // 標記為已儲存
         setLastSaved(new Date());
         setSaveStatus('saved');
         // 更新 Context 中的時間戳，以便下次儲存
@@ -116,6 +136,7 @@ function App() {
   const [view, setView] = useState<'login' | 'dashboard' | 'editor' | 'management' | 'ebook'>('login');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [initialData, setInitialData] = useState<BrochureData | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -132,7 +153,7 @@ function App() {
 
       // 電子書模式特殊處理 (不強制導向登入，但會檢查發佈狀態)
       if (mode === 'ebook' && urlId) {
-        let cloudData = await storage.getBrochure(urlId);
+        let cloudData = await storage.getBrochure(urlId, true); // E-Book 模式需要圖片
         
         // 如果找不到 id，嘗試搜尋 shortId
         if (!cloudData && supabase) {
@@ -169,7 +190,7 @@ function App() {
       
       // 如果已登入，且有 urlId，則載入該手冊進入 editor
       if (urlId && mode !== 'ebook') {
-        const cloudData = await storage.getBrochure(urlId);
+        const cloudData = await storage.getBrochure(urlId, false); // 編輯器模式不需抓取巨大圖片
         if (cloudData) {
           if (cloudData.isDeleted) {
             alert('此手冊已被作廢，無法編輯。');
@@ -256,11 +277,56 @@ function App() {
     };
   }, [view]);
 
+  // 載入進度模擬邏輯
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      setLoadingProgress(0);
+      interval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 98) return prev;
+          // 智慧減速：越接近 100 跑越慢
+          const remaining = 100 - prev;
+          const increment = Math.max(0.1, remaining * 0.15);
+          return Math.min(98, prev + increment);
+        });
+      }, 200);
+    } else {
+      setLoadingProgress(100);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading]);
+
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500">
-        <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-4" />
-        <p className="font-medium tracking-wider">載入手冊資料中...</p>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+        <div className="w-full max-w-[280px] flex flex-col items-center">
+          {/* Logo 區域 */}
+          <div className="mb-12 flex flex-col items-center animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mb-5 shadow-sm">
+               <Globe className="text-blue-600 animate-spin" style={{ animationDuration: '3s' }} size={40} />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">鑫囍探索旅行</h2>
+            <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-[0.3em] font-bold">Smart Brochure</p>
+          </div>
+
+          {/* 進度條區域 */}
+          <div className="w-full space-y-4">
+            <div className="flex justify-between items-end px-1">
+              <span className="text-xs font-bold text-gray-500">載入手冊資料中...</span>
+              <span className="text-xs font-black text-blue-600 font-mono">{Math.round(loadingProgress)}%</span>
+            </div>
+            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden p-0.5 border border-gray-50">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out shadow-sm"
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-300 text-center font-medium">正在從伺服器安全取得您的專屬行程</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -286,7 +352,7 @@ function App() {
       onGoToManagement={() => setView('management')}
       onSelectBrochure={async (id) => {
       setLoading(true);
-      const loadedData = await storage.getBrochure(id);
+      const loadedData = await storage.getBrochure(id, false); // 從列表進入編輯器不需圖片
 
       setLoading(false);
 
@@ -307,7 +373,7 @@ function App() {
       onBack={() => setView('dashboard')}
       onEdit={async (id) => {
         setLoading(true);
-        const loadedData = await storage.getBrochure(id);
+        const loadedData = await storage.getBrochure(id, false); // 管理頁面進入編輯不需圖片
         setLoading(false);
         if (loadedData) {
            setInitialData(loadedData);

@@ -36,13 +36,12 @@ export async function captureBrochurePages(
             // 由於併發，進度稍微估算
             if (onProgress) onProgress(actualIdx + 1, total);
             
-            // 改用 toJpeg 並設定品質，JPEG 編碼速度通常比 PNG 快且檔案小得多
-            return h2i.toJpeg(page as HTMLElement, {
-                pixelRatio: 1.8, // 稍微調降至 1.8，兼顧清晰度與生成速度
-                quality: 0.85,
+            // 改用 toPng 確保最高清晰度 (PNG 不失真)
+            return h2i.toPng(page as HTMLElement, {
+                pixelRatio: 2.5, // 提升像素比至 2.5，確保文字在電子書中清晰
                 backgroundColor: '#ffffff',
                 skipAnimations: true,
-                cacheBust: true, // 避免快取導致的舊圖問題
+                cacheBust: true,
             });
         }));
         

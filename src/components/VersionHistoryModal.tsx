@@ -35,22 +35,7 @@ export function VersionHistoryModal({ isOpen, onClose, brochureId, onRestore }: 
     setLoading(true);
     try {
       const data = await storage.getVersions(brochureId);
-      console.log('取得的版本資料列：', data);
-      
-      // 確保 data 欄位如果是字串就解析它
-      const parsedData = data.map(v => {
-        let snapshot = v.data;
-        if (typeof v.data === 'string') {
-          try {
-            snapshot = JSON.parse(v.data);
-          } catch (e) {
-            console.error('解析版本快照失敗：', e);
-          }
-        }
-        return { ...v, data: snapshot };
-      });
-      
-      setVersions(parsedData);
+      setVersions(data);
     } catch (err) {
       console.error('載入版本失敗:', err);
     }
@@ -62,7 +47,14 @@ export function VersionHistoryModal({ isOpen, onClose, brochureId, onRestore }: 
     
     setRestoringId(version.id);
     try {
-      const snapshot = version.data as BrochureData;
+      // 在恢復前才去抓取詳細的 data
+      const snapshot = await storage.getLogDetail(version.id);
+      
+      if (!snapshot) {
+        alert('無法取得該版本的詳細內容，可能已被刪除。');
+        return;
+      }
+
       await storage.restoreVersion(brochureId, snapshot);
       onRestore(snapshot);
       onClose();
@@ -145,9 +137,6 @@ export function VersionHistoryModal({ isOpen, onClose, brochureId, onRestore }: 
                           </span>
                           {index === 0 && (
                             <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-md">目前版本</span>
-                          )}
-                          {!version.data && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-md italic">僅紀錄 (無快照)</span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">

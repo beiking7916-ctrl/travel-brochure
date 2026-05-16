@@ -23,6 +23,9 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
         logs: []
     });
 
+    const [categoryFilter, setCategoryFilter] = useState<'全部' | '出團' | '報價'>('全部');
+    const [statusFilter, setStatusFilter] = useState<string>('全部');
+
     const loadList = async () => {
         const list = await storage.getList();
         setBrochures(list);
@@ -100,12 +103,29 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
         const date = new Date(dateString);
         return date.toLocaleDateString('zh-TW', {
             year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
         });
     };
+
+    const getStatusColor = (status?: string) => {
+        switch (status) {
+          case '待製作': return 'bg-gray-100 text-gray-500 border-gray-200';
+          case '初稿完成': return 'bg-blue-50 text-blue-600 border-blue-100';
+          case '待調整': return 'bg-orange-50 text-orange-600 border-orange-100';
+          case '內部確認':
+          case '待客戶確認': return 'bg-purple-50 text-purple-600 border-purple-100';
+          case '客戶已確認': return 'bg-green-50 text-green-600 border-green-100';
+          case '已出團': return 'bg-slate-700 text-white border-slate-800';
+          default: return 'bg-gray-100 text-gray-500 border-gray-200';
+        }
+    };
+
+    const filteredBrochures = brochures.filter(b => {
+        const matchesCategory = categoryFilter === '全部' || b.category === categoryFilter;
+        const matchesStatus = statusFilter === '全部' || b.status === statusFilter;
+        return matchesCategory && matchesStatus;
+    });
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -170,14 +190,43 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                         </div>
                     ) : (
                         <>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                我的草稿列表
-                                <span className="text-sm font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                                    {brochures.length} 份
-                                </span>
-                            </h2>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                    我的草稿列表
+                                    <span className="text-sm font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                                        {filteredBrochures.length} 份
+                                    </span>
+                                </h2>
+                                
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+                                        {(['全部', '出團', '報價'] as const).map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setCategoryFilter(cat)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                    categoryFilter === cat ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-600'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-600 outline-none shadow-sm"
+                                    >
+                                        <option value="全部">所有進度</option>
+                                        {['待製作', '初稿完成', '待調整', '內部確認', '待客戶確認', '客戶已確認', '已出團'].map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {brochures.map((meta) => (
+                                {filteredBrochures.map((meta) => (
                                     <div
                                         key={meta.id}
                                         onClick={() => onSelectBrochure(meta.id)}
@@ -196,8 +245,22 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                     <Calendar size={18} />
                                                 </button>
                                             </div>
-                                            <p className="text-sm text-gray-500 line-clamp-1 mb-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${meta.category === '出團' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                    {meta.category || '報價'}
+                                                </span>
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusColor(meta.status)}`}>
+                                                    {meta.status || '待製作'}
+                                                </span>
+                                                {meta.groupNumber && (
+                                                    <span className="text-[9px] text-gray-400 font-mono ml-auto">{meta.groupNumber}</span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-500 line-clamp-1 mb-4 flex items-center gap-1.5">
                                                 {meta.agency || '未設定旅行社'}
+                                                {meta.departureDate && (
+                                                    <span className="text-[10px] text-gray-300 ml-auto">出發: {meta.departureDate}</span>
+                                                )}
                                             </p>
 
                                             <div className="flex flex-col gap-1.5 mt-auto">
