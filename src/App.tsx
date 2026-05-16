@@ -236,7 +236,7 @@ function App() {
   useEffect(() => {
     if (view === 'login' || view === 'ebook') return;
 
-    let throttleTimer: NodeJS.Timeout | null = null;
+    let throttleTimer: any = null;
     const handleActivity = () => {
       if (throttleTimer) return;
       
