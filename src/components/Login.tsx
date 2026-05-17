@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { auth } from '../lib/auth';
-import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { storage } from '../lib/storage';
+import { Lock, Mail, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface LoginProps {
     onLoginSuccess: () => void;
@@ -28,6 +29,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
             setError('系統發生錯誤，請稍後再試');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleClearCache = async () => {
+        if (window.confirm('確定要清除所有本地快取（IndexedDB & localStorage）嗎？\n這將會清除當前登入狀態並重新整理頁面。')) {
+            await storage.clearAllCache();
+            window.location.reload();
         }
     };
 
@@ -99,6 +107,17 @@ export function Login({ onLoginSuccess }: LoginProps) {
                         {!isLoading && <ArrowRight size={18} />}
                     </button>
                 </form>
+
+                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-center">
+                    <button
+                        onClick={handleClearCache}
+                        className="flex items-center gap-2 text-xs text-gray-400 hover:text-red-500 transition-colors"
+                        title="清除本地暫存資料"
+                    >
+                        <RefreshCw size={12} />
+                        清除快取並重新載入
+                    </button>
+                </div>
             </div>
         </div>
     );

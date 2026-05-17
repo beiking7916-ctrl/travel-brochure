@@ -84,6 +84,31 @@ export function PreviewPanel() {
     }
   };
 
+  // 使用 useEffect 確保實體 DOM 渲染後，為每一頁加上正確的奇偶數 class
+  // 這樣能解決 React 嵌套導致的「跳動與亂換邊」問題
+  React.useEffect(() => {
+    const containers = [
+      document.querySelector('.preview-container'),
+      document.querySelector('#capture-pages-root')
+    ];
+    
+    containers.forEach(container => {
+      if (!container) return;
+      const pages = container.querySelectorAll('.a5-page:not(.cover-page)');
+      pages.forEach((page, index) => {
+        // 目錄是實際的第1頁 (奇數)，所以 index 0 = 奇數頁
+        const isOdd = index % 2 === 0;
+        if (isOdd) {
+          page.classList.add('page-odd');
+          page.classList.remove('page-even');
+        } else {
+          page.classList.add('page-even');
+          page.classList.remove('page-odd');
+        }
+      });
+    });
+  });
+
   const PageContainer = ({ children, title, id }: { children: React.ReactNode, title: string, id: string }) => (
     <div id={`preview-section-${id}`} className="flex flex-col items-center gap-2 group scroll-mt-20">
       <span className="text-[11px] font-bold text-gray-400/80 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity duration-300">

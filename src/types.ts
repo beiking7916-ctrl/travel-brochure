@@ -169,6 +169,7 @@ export interface BrochureMeta {
   category?: BrochureCategory;
   status?: BrochureStatus;
   departureDate?: string;
+  isClosed?: boolean;
 }
 
 export interface BrochureData {
@@ -233,6 +234,7 @@ export interface BrochureData {
   category?: BrochureCategory; // 新增：分類
   status?: BrochureStatus;     // 新增：製作狀態
   departureDate?: string;      // 新增：出發日期 (用於管理與自動轉狀態)
+  isClosed?: boolean;           // 新增：是否已結案 (平常隱藏)
 }
 
 export interface User {
@@ -444,6 +446,7 @@ export function createDefaultData(): BrochureData {
     publishedImages: [], // 預設無快照
     category: '報價',     // 預設分類
     status: '待製作',      // 預設進度
+    isClosed: false,       // 預設未結案
   };
 }
 

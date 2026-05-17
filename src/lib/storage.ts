@@ -1,6 +1,6 @@
 import { BrochureData, BrochureMeta, BrochureCategory, BrochureStatus, createDefaultData } from '../types';
 export type { BrochureMeta }; // 重新匯出，讓 Dashboard 等組件能繼續從這裡引用
-import { get, set, del } from 'idb-keyval';
+import { get, set, del, clear } from 'idb-keyval';
 import { supabase } from './supabase';
 import { auth } from './auth';
 
@@ -12,10 +12,9 @@ export const storage = {
     async getList(): Promise<BrochureMeta[]> {
         try {
             if (supabase) {
-                // 優化：僅抓取 Metadata，不抓取完整巨大的 data 物件
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, expiresAt:data->>expiresAt, shortId:data->>shortId, category, status, departure_date, last_modified_by, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, isClosed:data->>isClosed, expiresAt:data->>expiresAt, shortId:data->>shortId, departureDateFromData:data->>departureDate, category, status, departure_date, last_modified_by, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
@@ -27,11 +26,26 @@ export const storage = {
                         })
                         .map((item: any) => {
                             let currentStatus = item.status || '待製作';
-                            const departureDate = item.departure_date;
+                            const departureDate = item.departure_date || item.departureDateFromData;
+                            let isClosed = item.isClosed === 'true' || item.isClosed === true;
                             
                             // 自動判定：如果當前日期大於等於出發日期，則顯示為「已出團」
                             if (departureDate && today >= departureDate) {
                                 currentStatus = '已出團';
+                                
+                                // 新增：如果分類是「出團」且已出發超過一週 (7天)，自動轉為「結案」
+                                if (item.category === '出團' && !isClosed) {
+                                    const depDate = new Date(departureDate);
+                                    const nowDate = new Date(today);
+                                    const diffTime = Math.abs(nowDate.getTime() - depDate.getTime());
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                                    
+                                    if (nowDate > depDate && diffDays > 7) {
+                                        isClosed = true;
+                                        // 在背景同步更新資料庫，避免阻塞主執行緒
+                                        this.updateMetadata(item.id, { isClosed: true }).catch(err => console.error('Auto-close sync failed:', err));
+                                    }
+                                }
                             }
 
                             return {
@@ -48,7 +62,8 @@ export const storage = {
                                 shortId: item.shortId || '',
                                 category: item.category || '報價',
                                 status: currentStatus,
-                                departureDate: departureDate || ''
+                                departureDate: departureDate || '',
+                                isClosed: isClosed
                             };
                         });
                     
@@ -267,13 +282,14 @@ export const storage = {
             const agency = data.agency || '';
             const groupNumber = data.groupNumber || '';
             const isPublished = !!data.isPublished;
+            const isClosed = !!data.isClosed;
             const expiresAt = data.expiresAt || '';
             const shortId = data.shortId || '';
 
             if (existingIndex >= 0) {
                 list[existingIndex] = { 
                     ...list[existingIndex], 
-                    title, agency, groupNumber, isPublished, expiresAt, shortId, 
+                    title, agency, groupNumber, isPublished, isClosed, expiresAt, shortId, 
                     isDeleted: !!data.isDeleted,
                     updatedAt: now, 
                     lastModifiedBy: (await auth.getCurrentUser())?.name || '系統' 
@@ -440,8 +456,8 @@ export const storage = {
         }
     },
 
-    // 快速更新手冊 Metadata (分類、狀態、出發日期等)
-    async updateMetadata(id: string, updates: { category?: BrochureCategory; status?: BrochureStatus; departureDate?: string }): Promise<{ success: boolean; error?: string }> {
+    // 快速更新手冊 Metadata (分類、狀態、出發日期、結案狀態等)
+    async updateMetadata(id: string, updates: { category?: BrochureCategory; status?: BrochureStatus; departureDate?: string; isClosed?: boolean }): Promise<{ success: boolean; error?: string }> {
         if (!supabase) return { success: false, error: 'Supabase 未設定' };
 
         try {
@@ -466,6 +482,7 @@ export const storage = {
             if (updates.category) updatedData.category = updates.category;
             if (updates.status) updatedData.status = updates.status;
             if (updates.departureDate) updatedData.departureDate = updates.departureDate;
+            if (updates.isClosed !== undefined) updatedData.isClosed = updates.isClosed;
 
             const updatePayload: any = {
                 data: updatedData,
@@ -514,6 +531,18 @@ export const storage = {
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };
+        }
+    },
+
+    // 清除所有本地快取 (用於版本更新或除錯)
+    async clearAllCache(): Promise<void> {
+        try {
+            await clear(); // 清除 IndexedDB
+            localStorage.clear(); // 清除 localStorage (包含 Session)
+            sessionStorage.clear(); // 清除 sessionStorage
+            console.log('所有本地快取已清除');
+        } catch (error) {
+            console.error('清除快取失敗：', error);
         }
     }
 };

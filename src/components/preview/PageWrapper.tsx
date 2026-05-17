@@ -16,22 +16,15 @@ interface PageWrapperProps {
 
 export function PageWrapper({ children, title, icon, hideHeaderFooter = false, className = '', sectionId, pageSide }: PageWrapperProps) {
     const { data } = useBrochure();
-    const contextSide = useContext(PageSideContext);
-    
-    // 優先順序：Progs > Context > 預設值 ('right')
-    const finalSide = pageSide || contextSide || 'right';
-
     // 取得當前頁面專屬設定，若無則用全域設定
     const specificSettings = sectionId ? data.pageSettings?.[sectionId] : undefined;
     const currentFontSize = specificSettings?.fontSize || data.contentFontSize || 14;
     const currentImageScale = specificSettings?.imageScale || data.imageHeightScale || 1.0;
 
-    const sideClass = finalSide === 'left' ? 'page-left' : 'page-right';
-
     if (hideHeaderFooter) {
         return (
             <div
-                className={`a5-page ${sideClass} p-6 flex flex-col relative ${className}`}
+                className={`a5-page p-6 flex flex-col relative ${className}`}
                 style={{
                     backgroundColor: data.theme.secondary,
                     color: data.theme.text,
@@ -50,7 +43,7 @@ export function PageWrapper({ children, title, icon, hideHeaderFooter = false, c
 
     return (
         <div
-            className={`a5-page ${sideClass} relative overflow-hidden flex flex-col pt-12 pb-12 px-6 ${className}`}
+            className={`a5-page relative overflow-hidden flex flex-col pt-12 pb-12 px-6 ${className}`}
             style={{
                 backgroundColor: data.theme.secondary,
                 color: data.theme.text,

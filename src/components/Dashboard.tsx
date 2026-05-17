@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { storage, BrochureMeta } from '../lib/storage';
-import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive, Globe } from 'lucide-react';
+import { FileText, Plus, Copy, Trash2, Calendar, LogOut, Archive, Globe, Settings } from 'lucide-react';
 import { HistoryModal } from './HistoryModal';
+import { QuickEditModal } from './QuickEditModal';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/auth';
 import type { BrochureData } from '../types';
@@ -22,9 +23,15 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
         title: '',
         logs: []
     });
+    // Quick Edit Modal State
+    const [quickEditModal, setQuickEditModal] = useState<{ isOpen: boolean; meta: BrochureMeta | null }>({
+        isOpen: false,
+        meta: null
+    });
 
     const [categoryFilter, setCategoryFilter] = useState<'全部' | '出團' | '報價'>('全部');
     const [statusFilter, setStatusFilter] = useState<string>('全部');
+    const [showClosed, setShowClosed] = useState(false);
 
     const loadList = async () => {
         const list = await storage.getList();
@@ -81,14 +88,6 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
         }
     };
 
-    const handleInvalidate = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (window.confirm('確定要「作廢」這份手冊嗎？作廢後手冊將從草稿清單中隱藏，但資料仍保留在雲端。')) {
-            await storage.invalidateBrochure(id);
-            await loadList();
-        }
-    };
-
     const handleViewHistory = async (e: React.MouseEvent, id: string, title: string) => {
         e.stopPropagation();
         const logs = await storage.getVersions(id);
@@ -121,22 +120,28 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
         }
     };
 
-    const handleQuickUpdate = async (e: React.ChangeEvent<HTMLSelectElement> | React.MouseEvent, id: string, field: 'category' | 'status', value?: string) => {
-        if (e) e.stopPropagation();
-        const newValue = value || (e.target as HTMLSelectElement).value;
-        // 使用 as any 轉換類型，因為我們確信 select 的值符合 BrochureCategory | BrochureStatus
-        const result = await storage.updateMetadata(id, { [field]: newValue as any });
+    const handleOpenQuickEdit = (e: React.MouseEvent, meta: BrochureMeta) => {
+        e.stopPropagation();
+        setQuickEditModal({
+            isOpen: true,
+            meta: meta
+        });
+    };
+
+    const handleQuickSave = async (id: string, updates: any) => {
+        const result = await storage.updateMetadata(id, updates);
         if (result.success) {
             await loadList();
         } else {
-            alert('更新失敗：' + result.error);
+            throw new Error(result.error);
         }
     };
 
     const filteredBrochures = brochures.filter(b => {
         const matchesCategory = categoryFilter === '全部' || b.category === categoryFilter;
         const matchesStatus = statusFilter === '全部' || b.status === statusFilter;
-        return matchesCategory && matchesStatus;
+        const matchesClosed = showClosed || !b.isClosed;
+        return matchesCategory && matchesStatus && matchesClosed;
     });
 
     return (
@@ -231,6 +236,17 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                             <option key={s} value={s}>{s}</option>
                                         ))}
                                     </select>
+                                    <div className="flex items-center gap-2 ml-4 px-4 border-l border-gray-200">
+                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                            <input
+                                                type="checkbox"
+                                                checked={showClosed}
+                                                onChange={(e) => setShowClosed(e.target.checked)}
+                                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                            />
+                                            <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600 transition-colors">顯示已結案</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -238,8 +254,12 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                 {filteredBrochures.map((meta) => (
                                     <div
                                         key={meta.id}
-                                        onClick={() => onSelectBrochure(meta.id)}
-                                        className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden flex flex-col h-56"
+                                        onClick={(e) => {
+                                            // 如果點擊的是下拉選單，則不執行跳轉
+                                            if ((e.target as HTMLElement).closest('select')) return;
+                                            onSelectBrochure(meta.id);
+                                        }}
+                                        className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden flex flex-col h-auto min-h-[260px]"
                                     >
                                         <div className="flex-1 p-5">
                                             <div className="flex items-start justify-between mb-3">
@@ -247,42 +267,54 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                     {meta.title}
                                                 </h3>
                                                 <button
+                                                    onClick={(e) => handleOpenQuickEdit(e, meta)}
+                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors ml-auto flex-shrink-0"
+                                                    title="快速編輯資訊"
+                                                >
+                                                    <Settings size={18} />
+                                                </button>
+                                                <button
                                                     onClick={(e) => handleViewHistory(e, meta.id, meta.title)}
-                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors ml-2 flex-shrink-0"
+                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
                                                     title="查看修改歷程"
                                                 >
                                                     <Calendar size={18} />
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2 mb-3">
-                                                <select
-                                                    value={meta.category || '報價'}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onChange={(e) => handleQuickUpdate(e, meta.id, 'category')}
-                                                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border-none cursor-pointer outline-none appearance-none hover:brightness-95 transition-all ${meta.category === '出團' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}
+                                                <div 
+                                                    onClick={(e) => handleOpenQuickEdit(e, meta)}
+                                                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer hover:brightness-90 transition-all ${meta.category === '出團' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}
                                                 >
-                                                    <option value="報價">報價</option>
-                                                    <option value="出團">出團</option>
-                                                </select>
-                                                <select
-                                                    value={meta.status || '待製作'}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onChange={(e) => handleQuickUpdate(e, meta.id, 'status')}
-                                                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border cursor-pointer outline-none appearance-none hover:brightness-95 transition-all ${getStatusColor(meta.status)}`}
+                                                    {meta.category || '報價'}
+                                                </div>
+                                                <div 
+                                                    onClick={(e) => handleOpenQuickEdit(e, meta)}
+                                                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border cursor-pointer hover:brightness-90 transition-all ${getStatusColor(meta.status)}`}
                                                 >
-                                                    {['待製作', '初稿完成', '待調整', '內部確認', '待客戶確認', '客戶已確認', '已出團'].map(s => (
-                                                        <option key={s} value={s}>{s}</option>
-                                                    ))}
-                                                </select>
+                                                    {meta.status || '待製作'}
+                                                </div>
+                                                {meta.isClosed && (
+                                                    <div className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-600 text-white border border-gray-700">
+                                                        已結案
+                                                    </div>
+                                                )}
                                                 {meta.groupNumber && (
                                                     <span className="text-[9px] text-gray-400 font-mono ml-auto">{meta.groupNumber}</span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-500 line-clamp-1 mb-4 flex items-center gap-1.5">
-                                                <span className="text-[10px] text-gray-300">
-                                                    {meta.departureDate ? `出發日期:${meta.departureDate}` : '未設定出發日期'}
-                                                </span>
-                                            </p>
+                                            <div className="mb-4">
+                                                {meta.departureDate ? (
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 font-bold text-[11px] shadow-sm">
+                                                        <Calendar size={12} />
+                                                        出發日期：{meta.departureDate}
+                                                    </div>
+                                                ) : (
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 text-gray-400 rounded-lg border border-gray-100 text-[10px]">
+                                                        未設定出發日期
+                                                    </div>
+                                                )}
+                                            </div>
 
                                             <div className="flex flex-col gap-1.5 mt-auto">
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -297,7 +329,7 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                             </div>
                                         </div>
 
-                                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex items-center justify-between transition-all">
                                             <button
                                                 onClick={(e) => handleDuplicate(e, meta.id)}
                                                 className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
@@ -306,21 +338,18 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                                                 複製
                                             </button>
                                             <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => handleInvalidate(e, meta.id)}
-                                                    className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors p-1 hover:bg-amber-50 rounded"
-                                                    title="作廢手冊"
-                                                >
-                                                    <Archive size={16} />
-                                                    <span className="hidden lg:inline text-xs">作廢</span>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(e, meta.id)}
-                                                    className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded"
-                                                    title="永久刪除"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {!meta.isClosed ? (
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, meta.id)}
+                                                        className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 rounded"
+                                                        title="永久刪除"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        <span className="text-xs">刪除</span>
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-100 rounded-lg">唯讀</span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -336,6 +365,13 @@ export function Dashboard({ onSelectBrochure, onLogout, onGoToManagement }: Dash
                 onClose={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
                 title={historyModal.title}
                 logs={historyModal.logs}
+            />
+
+            <QuickEditModal
+                isOpen={quickEditModal.isOpen}
+                onClose={() => setQuickEditModal(prev => ({ ...prev, isOpen: false }))}
+                onSave={handleQuickSave}
+                meta={quickEditModal.meta}
             />
         </div>
     );

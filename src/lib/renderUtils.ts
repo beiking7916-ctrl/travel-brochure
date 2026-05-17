@@ -38,7 +38,7 @@ export async function captureBrochurePages(
             
             // 改用 toPng 確保最高清晰度 (PNG 不失真)
             return h2i.toPng(page as HTMLElement, {
-                pixelRatio: 2.5, // 提升像素比至 2.5，確保文字在電子書中清晰
+                pixelRatio: 1.5, // 降低像素比至 1.5 以提升 PNG 轉換效率
                 backgroundColor: '#ffffff',
                 skipAnimations: true,
                 cacheBust: true,

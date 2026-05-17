@@ -225,19 +225,26 @@ export function Header({
                     📖 旅遊手冊產生器
                 </h1>
 
-                {/* 資料鎖定切換 */}
-                <button
-                    onClick={() => updateData({ isLocked: !data.isLocked })}
-                    className={`ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 border-2 ${
-                        data.isLocked 
-                            ? 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm animate-pulse' 
-                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600'
-                    }`}
-                    title={data.isLocked ? "點擊解除鎖定以恢復自動儲存" : "點擊鎖定後將停止自動儲存，保護資料不被意外更改"}
-                >
-                    {data.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
-                    {data.isLocked ? '資料已鎖定' : '資料未鎖定'}
-                </button>
+                {/* 資料鎖定切換或唯讀狀態 */}
+                {data.isClosed ? (
+                    <div className="ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 border-2 border-gray-200 text-gray-500 shadow-sm cursor-not-allowed" title="此手冊已結案，唯讀模式下無法自動儲存">
+                        <Lock size={14} />
+                        已結案 (唯讀)
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => updateData({ isLocked: !data.isLocked })}
+                        className={`ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 border-2 ${
+                            data.isLocked 
+                                ? 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm animate-pulse' 
+                                : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                        }`}
+                        title={data.isLocked ? "點擊解除鎖定以恢復自動儲存" : "點擊鎖定後將停止自動儲存，保護資料不被意外更改"}
+                    >
+                        {data.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                        {data.isLocked ? '資料已鎖定' : '資料未鎖定'}
+                    </button>
+                )}
 
                 {saveStatus && (
                     <div className="ml-4 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100">
@@ -277,15 +284,17 @@ export function Header({
 
                 <button
                     onClick={handleSaveToCloud}
-                    disabled={isSavingCloud}
+                    disabled={isSavingCloud || data.isClosed}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold transition-all active:scale-95 shadow-sm ${
-                        isSavingCloud 
-                            ? 'opacity-70 cursor-wait bg-blue-50 border-blue-100 text-blue-500' 
-                            : saveStatus === 'unsaved'
-                                ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:shadow-md animate-pulse'
-                                : 'bg-white hover:bg-blue-50 text-blue-700 border-blue-200'
+                        data.isClosed
+                            ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200'
+                            : isSavingCloud 
+                                ? 'opacity-70 cursor-wait bg-blue-50 border-blue-100 text-blue-500' 
+                                : saveStatus === 'unsaved'
+                                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:shadow-md animate-pulse'
+                                    : 'bg-white hover:bg-blue-50 text-blue-700 border-blue-200'
                     }`}
-                    title="儲存草稿到 Supabase 雲端並取得分享連結"
+                    title={data.isClosed ? "手冊已結案，唯讀狀態下無法儲存" : "儲存草稿到 Supabase 雲端並取得分享連結"}
                 >
                     <CloudUpload size={18} className={isSavingCloud ? 'animate-spin' : ''} />
                     {isSavingCloud ? '正在同步...' : '強制儲存'}

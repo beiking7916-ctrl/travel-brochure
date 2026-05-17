@@ -8,10 +8,12 @@
 }
 
 * {
-  font-family: 'Noto Sans TC', 'Inter', sans-serif;
+  box-sizing: border-box;
 }
 
 body {
+  font-family: 'Noto Sans TC', 'Inter', sans-serif;
+
   background-color: #f3f4f6;
   /* 讓整體預覽區背景有區隔 */
   margin: 0;
@@ -95,16 +97,12 @@ body {
   content: "- " counter(pageNum) " -";
 }
 
-/* 頁首奇偶數頁不同 */
-/* 因為封面是第一個元素，導致後續頁面的 DOM 索引 +1
-   DOM 偶數(even) = 實際第1(目錄), 3, 5頁 (奇數頁) -> 頁首置右 (row-reverse)
-   DOM 奇數(odd) = 實際第2, 4, 6頁 (偶數頁) -> 頁首置左 (row) */
-/* 頁首奇偶數頁不同：左頁(偶數)靠左，右頁(奇數)靠右 */
-.a5-page.page-left .page-header {
+/* 單雙數頁不同邊：由 React useEffect 計算實體 DOM 賦予的 class */
+.a5-page.page-even .page-header {
   flex-direction: row;
 }
 
-.a5-page.page-right:not(.cover-page) .page-header {
+.a5-page.page-odd:not(.cover-page) .page-header {
   flex-direction: row-reverse;
 }
 

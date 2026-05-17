@@ -32,8 +32,8 @@ function InnerApp({ currentId, currentUser, onBackToDashboard }: { currentId: st
       return;
     }
 
-    // 資料已鎖定或發生衝突時不自動儲存
-    if (data.isLocked || hasConflict) {
+    // 資料已鎖定、發生衝突或已結案時不自動儲存
+    if (data.isLocked || hasConflict || data.isClosed) {
       setSaveStatus('saved');
       return;
     }
