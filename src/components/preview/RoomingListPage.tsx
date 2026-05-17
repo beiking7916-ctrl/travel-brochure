@@ -82,11 +82,11 @@ export function RoomingListPage() {
                                     </thead>
                                     <tbody>
                                         {chunk.map((room) => {
-                                            const namesToRender = (room.names || []).filter(n => n?.trim() !== '');
+                                            const namesToRender = (room.names || []).filter((n: string) => n?.trim() !== '');
                                             if (namesToRender.length === 0) namesToRender.push('');
                                             const peopleCount = namesToRender.length;
 
-                                            return namesToRender.map((name, nameIdx) => {
+                                            return namesToRender.map((name: string, nameIdx: number) => {
                                                 const currentSeq = globalIdx++;
                                                 return (
                                                     <tr key={`${room.id}-${nameIdx}`} className="hover:bg-gray-50/50">
@@ -151,10 +151,10 @@ export function RoomingListPage() {
                             {/* Mobile View: Cards */}
                             <div className="md:hidden flex-grow overflow-auto p-4 space-y-3 bg-gray-50">
                                 {chunk.map((room) => {
-                                    const namesToRender = (room.names || []).filter(n => n?.trim() !== '');
+                                    const namesToRender = (room.names || []).filter((n: string) => n?.trim() !== '');
                                     if (namesToRender.length === 0) namesToRender.push('');
 
-                                    return namesToRender.map((name, nameIdx) => {
+                                    return namesToRender.map((name: string, nameIdx: number) => {
                                         const currentSeq = mobileGlobalIdx++;
                                         return (
                                             <div key={`${room.id}-${nameIdx}`} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden group">

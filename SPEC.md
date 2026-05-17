@@ -239,3 +239,16 @@ App
 - [ ] 列印輸出為 PDF 格式
 - [ ] A4 尺寸正確
 - [ ] 響應式設計（Desktop/Tablet/Mobile）
+
+## 6. 錯誤與修復紀錄
+
+### 部署建置錯誤紀錄 (2026-05-17)
+**錯誤內容**：
+在進行部署時發生 TypeScript 型別推斷錯誤（Error TS7006: Parameter implicitly has an 'any' type），導致 `npm run build` 失敗，退出代碼為 2。
+主要發生在 `src/components/preview/RoomingListPage.tsx` 檔案的以下參數：
+- 參數 `n` (行 85, 154)
+- 參數 `name` (行 89, 157)
+- 參數 `nameIdx` (行 89, 157)
+
+**修復方式**：
+已為 `RoomingListPage.tsx` 中陣列 `filter` 與 `map` 方法的參數補上明確的型別宣告（`n: string`, `name: string`, `nameIdx: number`），解決編譯失敗的問題。
