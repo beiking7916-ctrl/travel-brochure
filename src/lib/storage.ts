@@ -14,7 +14,7 @@ export const storage = {
             if (supabase) {
                 const { data: cloudData, error } = await supabase
                     .from('brochures')
-                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, isClosed:data->>isClosed, expiresAt:data->>expiresAt, shortId:data->>shortId, departureDateFromData:data->>departureDate, category, status, departure_date, last_modified_by, created_at, updated_at')
+                    .select('id, title:data->>title, agency:data->>agency, groupNumber:data->>groupNumber, isPublished:data->>isPublished, isDeleted:data->>isDeleted, isClosed:data->>isClosed, expiresAt:data->>expiresAt, shortId:data->>shortId, ebookId:data->>ebookId, departureDateFromData:data->>departureDate, category, status, departure_date, last_modified_by, created_at, updated_at')
                     .order('updated_at', { ascending: false });
 
                 if (!error && cloudData) {
@@ -60,6 +60,7 @@ export const storage = {
                                 isDeleted: false,
                                 expiresAt: item.expiresAt || '',
                                 shortId: item.shortId || '',
+                                ebookId: item.ebookId || '',
                                 category: item.category || '報價',
                                 status: currentStatus,
                                 departureDate: departureDate || '',
@@ -141,10 +142,22 @@ export const storage = {
         let isConflict = false;
         
         // 1. 準備儲存的資料，移除暫存的 serverUpdatedAt 欄位
-        const dataToSave = { ...data };
+        let dataToSave = { ...data };
         delete dataToSave.serverUpdatedAt;
 
-        // 2. 儲存到雲端 Supabase (優先雲端)
+        // 2. 自動將所有 Base64 圖片上傳至 Supabase Storage，並替換為網址
+        if (supabase) {
+            try {
+                const sanitized = await uploadAndReplaceBase64Images(id, dataToSave);
+                dataToSave = sanitized;
+                // 將已替換網址的部分同步回原始 data 物件，讓 React 狀態也變輕量
+                Object.assign(data, dataToSave);
+            } catch (err) {
+                console.error('儲存時自動上傳圖片發生錯誤:', err);
+            }
+        }
+
+        // 3. 儲存到雲端 Supabase (優先雲端)
         if (supabase) {
             try {
                 const user = await auth.getCurrentUser();
@@ -177,8 +190,8 @@ export const storage = {
                     };
                     
                     // 只有當物件中確實含有圖片時才更新圖片欄位，避免覆蓋舊圖
-                    if (data.publishedImages) {
-                        updatePayload.published_images = data.publishedImages;
+                    if (dataToSave.publishedImages) {
+                        updatePayload.published_images = dataToSave.publishedImages;
                     }
 
                     const { data: updatedData, error } = await supabase
@@ -205,7 +218,7 @@ export const storage = {
                         .insert({
                             id: id,
                             data: dataToSave,
-                            published_images: data.publishedImages || null, // 圖片存入獨立欄位
+                            published_images: dataToSave.publishedImages || null, // 圖片存入獨立欄位
                             short_id: data.shortId || null,
                             updated_at: now,
                             last_modified_by: editorName
@@ -285,18 +298,19 @@ export const storage = {
             const isClosed = !!data.isClosed;
             const expiresAt = data.expiresAt || '';
             const shortId = data.shortId || '';
+            const ebookId = data.ebookId || '';
 
             if (existingIndex >= 0) {
                 list[existingIndex] = { 
                     ...list[existingIndex], 
-                    title, agency, groupNumber, isPublished, isClosed, expiresAt, shortId, 
+                    title, agency, groupNumber, isPublished, isClosed, expiresAt, shortId, ebookId,
                     isDeleted: !!data.isDeleted,
                     updatedAt: now, 
                     lastModifiedBy: (await auth.getCurrentUser())?.name || '系統' 
                 };
             } else {
                 list.unshift({
-                    id, title, agency, groupNumber, isPublished, expiresAt, shortId,
+                    id, title, agency, groupNumber, isPublished, expiresAt, shortId, ebookId,
                     isDeleted: !!data.isDeleted,
                     createdAt: now, updatedAt: now,
                     lastModifiedBy: (await auth.getCurrentUser())?.name || '系統'
@@ -384,38 +398,106 @@ export const storage = {
         return await this.saveBrochure(id, versionData);
     },
 
-    // 將手冊發佈到外部電子書系統 (FlipCloud)
-    async publishToEbook(title: string, pages: string[]): Promise<{ success: boolean; id?: string; error?: string }> {
-        const EBOOK_API_URL = import.meta.env.VITE_FLIPCLOUD_API_URL || 'https://flipcloud-api.khuang167.workers.dev';
-        const API_KEY = import.meta.env.VITE_FLIPCLOUD_API_KEY;
-
-        if (!API_KEY) {
-            return { success: false, error: 'FlipCloud API 金鑰尚未設定' };
+    // 將手冊直接發佈到電子書系統的 ebooks 資料表與 Storage
+    async publishToEbook(title: string, pages: string[], existingEbookId?: string): Promise<{ success: boolean; id?: string; error?: string }> {
+        if (!supabase) {
+            return { success: false, error: 'Supabase 連線尚未初始化' };
         }
 
-        try {
-            const response = await fetch(`${EBOOK_API_URL}/api/upload`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': API_KEY
-                },
-                body: JSON.stringify({
-                    title: title,
-                    pages: pages, // PNG Base64 陣列
-                    category: '旅遊手冊'
-                })
-            });
+        const bookId = existingEbookId && existingEbookId.trim() !== '' 
+            ? existingEbookId 
+            : (() => {
+                const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
+                const array = new Uint8Array(6);
+                crypto.getRandomValues(array);
+                return Array.from(array).map(b => chars[b % chars.length]).join('');
+            })();
 
-            const result = await response.json();
-            if (response.ok && result.id) {
-                return { success: true, id: result.id };
-            } else {
-                return { success: false, error: result.error || '發佈到電子書系統失敗' };
+        try {
+            const pageUrls: string[] = [];
+
+            // 1. 將所有分頁 Base64 圖片上傳至 brochures bucket 中的 ebooks/${bookId} 路徑下
+            for (let p = 0; p < pages.length; p++) {
+                const base64Data = pages[p];
+                const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+                if (!matches || matches.length !== 3) {
+                    throw new Error(`第 ${p + 1} 頁的圖片格式不正確`);
+                }
+
+                const mimeType = matches[1];
+                const base64Str = matches[2].replace(/\s/g, '');
+                
+                const byteCharacters = atob(base64Str);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+
+                let ext = 'png';
+                if (mimeType.includes('webp')) ext = 'webp';
+                else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+
+                const fileName = `page_${String(p + 1).padStart(3, '0')}.${ext}`;
+                const filePath = `ebooks/${bookId}/${fileName}`;
+
+                // 上傳至 Storage
+                const { error: uploadError } = await supabase.storage
+                    .from('brochures')
+                    .upload(filePath, byteArray, {
+                        contentType: mimeType,
+                        cacheControl: '31536000',
+                        upsert: true
+                    });
+
+                if (uploadError) {
+                    throw new Error(`上傳第 ${p + 1} 頁圖片失敗: ${uploadError.message}`);
+                }
+
+                // 取得公開下載連結
+                const { data: { publicUrl } } = supabase.storage
+                    .from('brochures')
+                    .getPublicUrl(filePath);
+
+                pageUrls.push(publicUrl);
             }
+
+            // 2. 取得當前使用者與時間
+            const now = new Date().toISOString();
+            const user = await auth.getCurrentUser();
+            const editorName = user?.name || user?.email || '未知使用者';
+
+            // 3. 寫入或更新 ebooks 資料表
+            const ebookRecord = {
+                id: bookId,
+                title: title,
+                created_at: now,
+                updated_at: now,
+                last_modified_by: editorName,
+                category: '旅遊手冊',
+                status: '已發佈',
+                data: {
+                    publishedImages: pageUrls,
+                    pageCount: pageUrls.length,
+                    notes: '由旅遊手冊系統自動同步發佈',
+                    isPublished: true,
+                    expiresAt: '',
+                    publishedAt: now
+                }
+            };
+
+            const { error: dbError } = await supabase
+                .from('ebooks')
+                .upsert(ebookRecord, { onConflict: 'id' });
+
+            if (dbError) {
+                throw dbError;
+            }
+
+            return { success: true, id: bookId };
         } catch (err: any) {
-            console.error('發佈到電子書時發生錯誤：', err);
-            return { success: false, error: err.message || '網路連線失敗' };
+            console.error('發佈到電子書系統時發生錯誤：', err);
+            return { success: false, error: err.message || '未知錯誤' };
         }
     },
 
@@ -546,3 +628,79 @@ export const storage = {
         }
     }
 };
+
+// ==========================================
+// 圖片實體化輔助功能 (Base64 -> Supabase Storage WebP)
+// ==========================================
+
+async function uploadAndReplaceBase64Images(id: string, obj: any): Promise<any> {
+    if (!obj) return obj;
+    
+    if (Array.isArray(obj)) {
+        return Promise.all(obj.map(item => uploadAndReplaceBase64Images(id, item)));
+    }
+    
+    if (typeof obj === 'object') {
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            if (typeof value === 'string' && value.startsWith('data:image/') && value.includes(';base64,')) {
+                const publicUrl = await uploadBase64ToStorage(id, key, value);
+                result[key] = publicUrl || value;
+            } else {
+                result[key] = await uploadAndReplaceBase64Images(id, value);
+            }
+        }
+        return result;
+    }
+    
+    return obj;
+}
+
+async function uploadBase64ToStorage(brochureId: string, fieldName: string, base64Data: string): Promise<string | null> {
+    if (!supabase) return null;
+    
+    try {
+        const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return null;
+        
+        const mimeType = matches[1];
+        const base64Str = matches[2].replace(/\s/g, '');
+        
+        const byteCharacters = atob(base64Str);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        
+        let ext = 'webp';
+        if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+        else if (mimeType.includes('png')) ext = 'png';
+        else if (mimeType.includes('gif')) ext = 'gif';
+        
+        const fileName = `${fieldName}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+        const filePath = `brochures/${brochureId}/assets/${fileName}`;
+        
+        const { error } = await supabase.storage
+            .from('brochures')
+            .upload(filePath, byteArray, {
+                contentType: mimeType,
+                cacheControl: '31536000',
+                upsert: true
+            });
+            
+        if (error) {
+            console.error('上傳圖片至 Storage 失敗:', error.message);
+            return null;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('brochures')
+            .getPublicUrl(filePath);
+            
+        return publicUrl;
+    } catch (err) {
+        console.error('處理 Base64 上傳發生錯誤:', err);
+        return null;
+    }
+}

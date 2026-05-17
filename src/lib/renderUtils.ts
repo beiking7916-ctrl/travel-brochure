@@ -36,9 +36,11 @@ export async function captureBrochurePages(
             // 由於併發，進度稍微估算
             if (onProgress) onProgress(actualIdx + 1, total);
             
-            // 改用 toPng 確保最高清晰度 (PNG 不失真)
-            return h2i.toPng(page as HTMLElement, {
-                pixelRatio: 1.5, // 降低像素比至 1.5 以提升 PNG 轉換效率
+            // 改用 toWebp 並設定品質 0.85 (高度壓縮且極佳清晰度)，並保留 toPng 作為相容性備份
+            const renderFn = h2i.toWebp || h2i.toPng;
+            return renderFn(page as HTMLElement, {
+                quality: 0.85,
+                pixelRatio: 1.5,
                 backgroundColor: '#ffffff',
                 skipAnimations: true,
                 cacheBust: true,

@@ -166,6 +166,39 @@ export function BasicInfoForm() {
             )}
           </div>
         </div>
+
+        {/* 封面呈現風格選擇 */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <label className={labelClassName}>封面排版風格 (Cover Style)</label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'classic', name: '經典奢華 (Classic)', desc: '經典對稱排版，主色調精緻裝飾' },
+              { id: 'modern', name: '現代極簡 (Modern)', desc: '不對稱大膽版面，大氣雜誌風格' },
+              { id: 'split-gradient', name: '漸層幾何 (Split)', desc: '柔和漸層背景，明信片導角相框' },
+              { id: 'photocentric', name: '滿版寫真 (Photo)', desc: '封面圖滿版背景，磨砂玻璃字卡' },
+            ].map((style) => (
+              <button
+                key={style.id}
+                type="button"
+                onClick={() => updateData({ coverStyle: style.id as any })}
+                className={`flex flex-col items-start p-3 rounded-xl border-2 text-left transition-all outline-none ${
+                  (data.coverStyle || 'classic') === style.id
+                    ? 'border-blue-500 bg-blue-50/30 ring-2 ring-blue-100 shadow-sm'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-white bg-white/50'
+                }`}
+              >
+                <span className={`text-xs font-bold ${
+                  (data.coverStyle || 'classic') === style.id ? 'text-blue-700' : 'text-gray-700'
+                }`}>
+                  {style.name}
+                </span>
+                <span className="text-[10px] text-gray-400 mt-1 leading-normal">
+                  {style.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">

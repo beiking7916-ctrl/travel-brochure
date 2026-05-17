@@ -93,12 +93,14 @@ export function Management({ onBack, onEdit }: ManagementProps) {
     setIsSaving(false);
   };
 
-  const handleCopyShortLink = (e: React.MouseEvent, id: string, shortId?: string) => {
+  const handleCopyShortLink = (e: React.MouseEvent, id: string, shortId?: string, ebookId?: string) => {
     e.stopPropagation();
-    const code = shortId || id;
-    const url = `${window.location.origin}${window.location.pathname}?mode=ebook&id=${code}`;
+    const ebookReaderBaseUrl = import.meta.env.VITE_EBOOK_READER_URL || `${window.location.origin}/ebook`;
+    const url = ebookId
+      ? `${ebookReaderBaseUrl}/?book=${ebookId}`
+      : `${window.location.origin}${window.location.pathname}?mode=ebook&id=${shortId || id}`;
     navigator.clipboard.writeText(url);
-    alert('已複製短網址至剪貼簿！');
+    alert('已複製電子書連結至剪貼簿！');
   };
 
   const filteredBrochures = brochures.filter(b => {
@@ -309,7 +311,11 @@ export function Management({ onBack, onEdit }: ManagementProps) {
                            <button
                              onClick={(e) => {
                                e.stopPropagation();
-                               window.open(`${window.location.origin}${window.location.pathname}?mode=ebook&id=${item.id}`, '_blank');
+                               const ebookReaderBaseUrl = import.meta.env.VITE_EBOOK_READER_URL || `${window.location.origin}/ebook`;
+                               const url = item.ebookId
+                                 ? `${ebookReaderBaseUrl}/?book=${item.ebookId}`
+                                 : `${window.location.origin}${window.location.pathname}?mode=ebook&id=${item.id}`;
+                               window.open(url, '_blank');
                              }}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-gray-100"
                             title="預覽電子書"

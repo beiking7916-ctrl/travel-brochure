@@ -67,6 +67,33 @@ export function AttractionPage() {
         );
     };
 
+    const renderSideImage = (attraction: Attraction, isCompact: boolean = false) => {
+        const { images } = attraction;
+        if (!images || images.length === 0) return null;
+        
+        const heightClass = isCompact ? "flex-1 min-h-0" : "flex-1 min-h-[140px]";
+        
+        // 如果有 2 張以上的圖片，且處於非緊湊模式下，可以顯示一個雙圖垂直排列
+        if (images.length >= 2 && !isCompact) {
+            return (
+                <div className="flex flex-col gap-2 h-full py-1">
+                    <div className="flex-1 rounded-xl overflow-hidden relative min-h-[70px]">
+                        <img src={images[0]} className="w-full h-full object-cover absolute inset-0" alt="" />
+                    </div>
+                    <div className="flex-1 rounded-xl overflow-hidden relative min-h-[70px]">
+                        <img src={images[1]} className="w-full h-full object-cover absolute inset-0" alt="" />
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className={`w-full ${heightClass} rounded-xl overflow-hidden relative`}>
+                <img src={images[0]} className="w-full h-full object-cover absolute inset-0" alt="" />
+            </div>
+        );
+    };
+
     // 使用統一的分頁工具
     const attractionPages = useMemo(() => {
         return getAttractionPages(attractions);
@@ -96,10 +123,32 @@ export function AttractionPage() {
                                 </div>
 
                                 <div className="bg-gray-50/50 p-3 rounded-xl flex-1 flex flex-col min-h-0">
-                                    <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium whitespace-pre-wrap ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
-                                        {parseRichText(attraction.description, data.theme.primary)}
-                                    </div>
-                                    {renderLayout(attraction, pageAttractions.length > 1)}
+                                    {attraction.layout === 'side-left' || attraction.layout === 'side-right' ? (
+                                        <div className="flex gap-4 items-stretch flex-1 min-h-0 py-1">
+                                            {attraction.layout === 'side-left' && (
+                                                <div className="w-[38%] flex-shrink-0 flex flex-col justify-center min-h-0">
+                                                    {renderSideImage(attraction, pageAttractions.length > 1)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 flex flex-col min-h-0 justify-center">
+                                                <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium whitespace-pre-wrap ${pageAttractions.length > 1 ? 'line-clamp-[7]' : 'flex-grow'}`}>
+                                                    {parseRichText(attraction.description, data.theme.primary)}
+                                                </div>
+                                            </div>
+                                            {attraction.layout === 'side-right' && (
+                                                <div className="w-[38%] flex-shrink-0 flex flex-col justify-center min-h-0">
+                                                    {renderSideImage(attraction, pageAttractions.length > 1)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className={`dynamic-text prose prose-sm max-w-none text-gray-600 font-medium whitespace-pre-wrap ${pageAttractions.length > 1 ? 'line-clamp-3 mb-2' : 'mb-3 flex-grow'}`}>
+                                                {parseRichText(attraction.description, data.theme.primary)}
+                                            </div>
+                                            {renderLayout(attraction, pageAttractions.length > 1)}
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}

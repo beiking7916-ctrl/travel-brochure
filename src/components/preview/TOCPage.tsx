@@ -83,20 +83,28 @@ export function TOCPage() {
 
         return (
             <div key={sectionId} className="space-y-2">
-                <div className="flex justify-between items-end pb-2 mt-4 relative">
-                    <div className="flex items-center gap-3 bg-white pr-2 z-10">
-                        <div className="p-1 px-2 rounded bg-gray-50 border border-gray-100 shadow-sm" style={{ color: data.theme.primary }}>
+                <div className="flex items-center justify-between pb-1 mt-4">
+                    {/* 左側：圖示與標題 */}
+                    <div className="flex items-center gap-3 pr-2 shrink-0">
+                        <div 
+                            className="p-1 px-2 rounded border shadow-sm flex items-center justify-center" 
+                            style={{ 
+                                color: data.theme.primary,
+                                borderColor: `${data.theme.primary}20`,
+                                backgroundColor: `${data.theme.primary}08`
+                            }}
+                        >
                             <IconComponent size={16} />
                         </div>
                         <span className="font-bold text-gray-800" style={{ color: data.theme.primary }}>{label}</span>
                     </div>
 
-                    {/* 點點連線 */}
-                    <div className="absolute left-0 right-0 bottom-4 border-b-[3px] border-dotted border-gray-200 z-0"></div>
+                    {/* 點點連線：採用 flex-grow 自適應 */}
+                    <div className="flex-grow mx-2 border-b-[3px] border-dotted border-gray-200 self-end mb-1"></div>
 
-                    {/* 頁次顯示 */}
+                    {/* 右側：頁次 */}
                     {pageNum && (
-                        <div className="bg-white pl-2 z-10 font-medium text-gray-500 text-sm pb-0.5">
+                        <div className="pl-2 shrink-0 font-medium text-gray-500 text-sm self-end">
                             {pageNum}
                         </div>
                     )}

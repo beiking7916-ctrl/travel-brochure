@@ -75,7 +75,7 @@ export interface Attraction {
   title: string;
   description: string;
   images: string[];
-  layout: 'top-1-bottom-2' | 'left-1-right-2' | 'grid-4' | 'single';
+  layout: 'top-1-bottom-2' | 'left-1-right-2' | 'grid-4' | 'single' | 'side-left' | 'side-right';
   country?: string; // 修正：景點國家資料
   pageBreakAfter?: boolean; // 景點手動分頁
   isTwoPerPage?: boolean; // 新增：是否一頁兩個景點
@@ -166,6 +166,7 @@ export interface BrochureMeta {
   isDeleted: boolean;
   expiresAt?: string;
   shortId?: string;
+  ebookId?: string; // 新增：電子書系統的書籍 ID
   category?: BrochureCategory;
   status?: BrochureStatus;
   departureDate?: string;
@@ -176,6 +177,7 @@ export interface BrochureData {
   agency: string;
   logo: string;
   coverImage?: string; // 新增封面滿版圖支援
+  coverStyle?: 'classic' | 'modern' | 'split-gradient' | 'photocentric'; // 封面樣式呈現
   title: string;
   subTitle?: string; // 新增副標題
   destination?: string; // 新增旅遊地點
@@ -229,6 +231,7 @@ export interface BrochureData {
   publishHistory?: { timestamp: string; action: 'publish' | 'unpublish' | 'status_change'; user?: string; note?: string }[]; // 新增：發佈紀錄
   version?: number; // 新增：版本號
   shortId?: string; // 新增：短網址代碼
+  ebookId?: string; // 新增：電子書系統的書籍 ID
   publishedImages?: string[]; // 新增：發佈時的分頁圖片快照 (High-DPI Captured PNGs)
   serverUpdatedAt?: string; // 新增：雲端最後更新時間，用於併發衝突檢查
   category?: BrochureCategory; // 新增：分類
@@ -433,6 +436,7 @@ export function createDefaultData(): BrochureData {
     tocSettings: defaultSectionOrder.reduce((acc, id) => ({ ...acc, [id]: true }), {}),
     tocText: '',
     tocImage: '',
+    coverStyle: 'classic',
     showTOCItineraryDetails: true,
     notesCount: 0,
     headerLogo: '',

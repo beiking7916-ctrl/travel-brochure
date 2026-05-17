@@ -25,10 +25,30 @@ export function AttractionForm() {
     const [saveAllResult, setSaveAllResult] = useState<{ success: number; updated: number; skip: number } | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [countryLibrary, setCountryLibrary] = useState<LibraryAttraction[]>([]);
+    const handleCountrySelect = (code: string) => {
+        setSelectedCountry(code);
+        const c = countries.find(x => x.code === code);
+        if (c && data.attractions && data.attractions.length > 0) {
+            const updated = data.attractions.map(a => ({
+                ...a,
+                country: c.name_zh
+            }));
+            updateData({ attractions: updated });
+        }
+    };
 
     useEffect(() => {
         attractionApi.fetchCountries().then(setCountries);
     }, []);
+
+    useEffect(() => {
+        if (selectedCountry) {
+            attractionApi.fetchAttractionsByCountry(selectedCountry).then(setCountryLibrary);
+        } else {
+            setCountryLibrary([]);
+        }
+    }, [selectedCountry]);
 
     const fetchLibrary = async () => {
         if (!selectedCountry) return;
@@ -65,6 +85,9 @@ export function AttractionForm() {
         setIsSavingAll(false);
         setSaveAllResult({ success: inserted, updated, skip });
         setTimeout(() => setSaveAllResult(null), 5000);
+        if (selectedCountry) {
+            attractionApi.fetchAttractionsByCountry(selectedCountry).then(setCountryLibrary);
+        }
     };
 
     const handleSaveToLibrary = async (index: number) => {
@@ -85,8 +108,14 @@ export function AttractionForm() {
 
         if (result.status === 'inserted') {
             alert(`✅ 已新增「${attraction.title}」至資料庫！`);
+            if (selectedCountry) {
+                attractionApi.fetchAttractionsByCountry(selectedCountry).then(setCountryLibrary);
+            }
         } else if (result.status === 'updated') {
             alert(`🔄 「${attraction.title}」已存在，資料已更新！`);
+            if (selectedCountry) {
+                attractionApi.fetchAttractionsByCountry(selectedCountry).then(setCountryLibrary);
+            }
         } else {
             alert('儲存失敗，請確認 Supabase table 已建立，且圖片不超過 2MB。');
         }
@@ -104,7 +133,10 @@ export function AttractionForm() {
         setDeletingId(id);
         const ok = await attractionApi.deleteAttractionFromLibrary(id);
         setDeletingId(null);
-        if (ok) setLibraryAttractions(prev => prev.filter(a => a.id !== id));
+        if (ok) {
+            setLibraryAttractions(prev => prev.filter(a => a.id !== id));
+            setCountryLibrary(prev => prev.filter(a => a.id !== id));
+        }
     };
 
     const handleLoadFromLibrary = (libraryItem: LibraryAttraction) => {
@@ -116,7 +148,7 @@ export function AttractionForm() {
                     title: libraryItem.title || '',
                     description: libraryItem.description || '',
                     images: libraryItem.images || [],
-                    layout: (libraryItem.layout as "top-1-bottom-2" | "left-1-right-2" | "grid-4" | "single") || 'top-1-bottom-2',
+                    layout: (libraryItem.layout as "top-1-bottom-2" | "left-1-right-2" | "grid-4" | "single" | "side-left" | "side-right") || 'top-1-bottom-2',
                     country: countries.find(c => c.code === libraryItem.country_code)?.name_zh || '',
                 },
             ],
@@ -125,6 +157,7 @@ export function AttractionForm() {
     };
 
     const addAttraction = () => {
+        const c = countries.find(x => x.code === selectedCountry);
         updateData({
             attractions: [
                 ...(data.attractions || []),
@@ -135,7 +168,8 @@ export function AttractionForm() {
                     images: [], 
                     layout: 'top-1-bottom-2', 
                     isTwoPerPage: false, 
-                    pageBreakAfter: false 
+                    pageBreakAfter: false,
+                    country: c ? c.name_zh : ''
                 },
             ],
         });
@@ -157,7 +191,22 @@ export function AttractionForm() {
 
     const updateAttraction = (index: number, field: string, value: any) => {
         const newAttractions = [...data.attractions];
-        newAttractions[index] = { ...newAttractions[index], [field]: value };
+        if (field === 'title') {
+            const matched = countryLibrary.find(item => item.title === value);
+            if (matched) {
+                newAttractions[index] = {
+                    ...newAttractions[index],
+                    title: matched.title,
+                    description: matched.description || '',
+                    layout: (matched.layout as any) || 'top-1-bottom-2',
+                    images: matched.images || [],
+                };
+            } else {
+                newAttractions[index] = { ...newAttractions[index], [field]: value };
+            }
+        } else {
+            newAttractions[index] = { ...newAttractions[index], [field]: value };
+        }
         updateData({ attractions: newAttractions });
     };
 
@@ -257,7 +306,7 @@ export function AttractionForm() {
                                         // 若直接打出完整代碼（2碼），自動選取
                                         const exactMatch = countries.find(c => c.code === val);
                                         if (exactMatch) {
-                                            setSelectedCountry(exactMatch.code);
+                                            handleCountrySelect(exactMatch.code);
                                         }
                                     }}
                                     onFocus={() => setIsCountryDropdownOpen(true)}
@@ -295,7 +344,7 @@ export function AttractionForm() {
                                                     key={c.code}
                                                     type="button"
                                                     onMouseDown={() => {
-                                                        setSelectedCountry(c.code);
+                                                        handleCountrySelect(c.code);
                                                         setCountrySearch('');
                                                         setIsCountryDropdownOpen(false);
                                                     }}
@@ -398,14 +447,24 @@ export function AttractionForm() {
                             <div className="grid grid-cols-[1fr_200px] gap-6 pl-2 mt-4">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className={labelClassName}>景點名稱</label>
-                                        <input
-                                            type="text"
-                                            value={attraction.title}
-                                            onChange={(e) => updateAttraction(index, 'title', e.target.value)}
-                                            className={inputClassName}
-                                            placeholder="例如：富士山"
-                                        />
+                                        <label className={labelClassName}>景點名稱 (可輸入關鍵字自動帶入舊景點資料與圖片)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                list={`attraction-title-list-${index}`}
+                                                value={attraction.title}
+                                                onChange={(e) => updateAttraction(index, 'title', e.target.value)}
+                                                className={inputClassName}
+                                                placeholder="輸入關鍵字搜尋或選擇之前存過的景點..."
+                                            />
+                                            <datalist id={`attraction-title-list-${index}`}>
+                                                {countryLibrary.map(item => (
+                                                    <option key={item.id} value={item.title}>
+                                                        {item.description ? `${item.description.slice(0, 30)}...` : '無描述'}
+                                                    </option>
+                                                ))}
+                                            </datalist>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className={labelClassName}>景點介紹 (支援多國語言或詳細描述)</label>
@@ -428,6 +487,8 @@ export function AttractionForm() {
                                                 <option value="left-1-right-2">左大圖 x1 + 右小圖 x2</option>
                                                 <option value="grid-4">四宮格等比</option>
                                                 <option value="single">滿版單圖</option>
+                                                <option value="side-left">左圖右文 (圖小文多)</option>
+                                                <option value="side-right">左文右圖 (圖小文多)</option>
                                             </select>
                                         </div>
                                         <div>

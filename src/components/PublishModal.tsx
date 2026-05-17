@@ -33,7 +33,21 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
             setStatusMessage(`正在處理第 ${current} / ${total} 頁...`);
         });
 
-        // 2. 更新資料並發佈
+        // 2. (選填) 同步發佈到 FlipCloud 電子書系統 (先取得 Ebook ID)
+        let ebookId = data.ebookId || null;
+        if (publishToFlipCloud) {
+            setStatusMessage('正在同步至 FlipCloud 電子書系統...');
+            const ebookResult = await storage.publishToEbook(data.title || '未命名手冊', images, data.ebookId);
+            if (ebookResult.success && ebookResult.id) {
+                ebookId = ebookResult.id;
+                setFlipCloudId(ebookResult.id);
+            } else {
+                console.error('FlipCloud 發佈失敗:', ebookResult.error);
+                alert('同步到電子書系統時失敗：' + ebookResult.error);
+            }
+        }
+
+        // 3. 更新資料並發佈
         const now = new Date().toISOString();
         const history = data.publishHistory || [];
         
@@ -43,6 +57,7 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
           publishedAt: now,
           expiresAt: expiresAt,
           publishedImages: images, // 儲存快照
+          ebookId: ebookId || undefined, // 儲存電子書 ID (回寫)
           publishHistory: [
             ...history,
             { timestamp: now, action: 'publish' as const }
@@ -50,7 +65,7 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
           version: (data.version || 0) + 1
         };
 
-        // 3. 儲存到手冊系統雲端
+        // 4. 儲存到手冊系統雲端
         setStatusMessage('正在同步至手冊雲端系統...');
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
@@ -59,18 +74,6 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
             if (!result.success && result.error === 'CONFLICT') {
                 alert('【發佈衝突】此手冊已被其他使用者修改並儲存。\n\n發佈已取消。請重新整理頁面以取得最新版本後再試。');
                 return;
-            }
-        }
-
-        // 4. (選填) 同步發佈到 FlipCloud 電子書系統
-        if (publishToFlipCloud) {
-            setStatusMessage('正在同步至 FlipCloud 電子書系統...');
-            const ebookResult = await storage.publishToEbook(data.title || '未命名手冊', images);
-            if (ebookResult.success && ebookResult.id) {
-                setFlipCloudId(ebookResult.id);
-            } else {
-                console.error('FlipCloud 發佈失敗:', ebookResult.error);
-                alert('手冊系統發佈成功，但同步到電子書系統時失敗：' + ebookResult.error);
             }
         }
 
@@ -107,7 +110,10 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
     }
   };
 
-  const ebookUrl = `${window.location.origin}${window.location.pathname}?id=${(new URLSearchParams(window.location.search)).get('id')}&mode=ebook`;
+  const ebookReaderBaseUrl = import.meta.env.VITE_EBOOK_READER_URL || `${window.location.origin}/ebook`;
+  const ebookUrl = data.ebookId 
+    ? `${ebookReaderBaseUrl}/?book=${data.ebookId}`
+    : `${window.location.origin}${window.location.pathname}?id=${(new URLSearchParams(window.location.search)).get('id')}&mode=ebook`;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 no-print">
@@ -240,13 +246,13 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
                     <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-blue-100">
                         <input 
                             readOnly 
-                            value={`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`} 
+                            value={`${ebookReaderBaseUrl}/?book=${flipCloudId}`} 
                             className="flex-1 text-[10px] font-mono text-gray-500 bg-transparent outline-none"
                         />
                         <button 
                             onClick={() => {
-                                navigator.clipboard.writeText(`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`);
-                                alert('FlipCloud 連結已複製！');
+                                navigator.clipboard.writeText(`${ebookReaderBaseUrl}/?book=${flipCloudId}`);
+                                alert('電子書連結已複製！');
                             }}
                             className="text-[10px] font-bold text-blue-600 hover:underline"
                         >
@@ -254,12 +260,12 @@ export function PublishModal({ isOpen, onClose }: PublishModalProps) {
                         </button>
                     </div>
                     <a 
-                      href={`https://flipcloud-api.khuang167.workers.dev/r/${flipCloudId}`} 
+                      href={`${ebookReaderBaseUrl}/?book=${flipCloudId}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
                     >
-                        <ExternalLink size={14} /> 開啟 FlipCloud 電子書
+                        <ExternalLink size={14} /> 開啟電子書程式
                     </a>
                 </div>
             </div>
